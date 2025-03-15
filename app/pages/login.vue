@@ -1,74 +1,59 @@
 <template>
-  <div class="min-h-screen bg-[#151921] p-6 flex items-center justify-center">
-    <div class="w-full max-w-md p-8 rounded-2xl bg-[#1A1F2C]">
+  <div class="min-h-screen p-6 flex items-center justify-center">
+    <UCard class="w-full max-w-md p-3">
       <!-- Header -->
-      <div class="text-center mb-8">
-        <h1 class="text-2xl text-gray-200 mb-2">Sign in to your account</h1>
-      </div>
+      <template #header>
+        <div class="text-center">
+          <h1 class="text-2xl">Sign in to your account</h1>
+        </div>
+      </template>
 
       <!-- Login Form -->
-      <form @submit.prevent="login" class="space-y-6">
+      <UForm :state="form" @submit.prevent="login" class="space-y-6">
         <!-- Email Input -->
-        <div class="space-y-2">
-          <label class="block text-gray-400 text-sm mb-1">Email</label>
-          <div class="relative">
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-              <Icon name="ph:envelope" size="20" />
-            </span>
-            <input
-              v-model="form.email"
-              type="email"
-              placeholder="Enter your email"
-              class="w-full pl-12 pr-4 py-3 rounded-lg bg-[#232936] border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#4CAF50] focus:ring-1 focus:ring-[#4CAF50]"
-              required
-            />
-          </div>
-        </div>
-
-        <!-- Password Input -->
-        <div class="space-y-2">
-          <label class="block text-gray-400 text-sm mb-1">Password</label>
-          <div class="relative">
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-              <Icon name="ph:key" size="20" />
-            </span>
-            <input
-              v-model="form.password"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="Enter your password"
-              class="w-full pl-12 pr-12 py-3 rounded-lg bg-[#232936] border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#4CAF50] focus:ring-1 focus:ring-[#4CAF50]"
-              required
-            />
-            <button
-              type="button"
-              @click="showPassword = !showPassword"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
-            >
-              <Icon :name="showPassword ? 'ph:eye-slash' : 'ph:eye'" size="20" />
-            </button>
-          </div>
-        </div>
-
+        <UFormField label="Email" name="email">
+          <UInput
+            size="xl"
+            placeholder="Enter your email"
+            class="w-full"
+            v-model="form.email"
+          />
+        </UFormField>
+        <UFormField label="Password" name="password">
+          <UInput
+            v-model="form.password"
+            class="w-full"
+            placeholder="Password"
+            size="xl"
+            :type="showPassword ? 'text' : 'password'"
+            :ui="{ trailing: 'pe-1' }"
+          >
+            <template #trailing>
+              <UButton
+                color="neutral"
+                variant="link"
+                size="sm"
+                :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                :aria-pressed="showPassword"
+                aria-controls="password"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </UInput>
+        </UFormField>
         <!-- Remember Me & Forgot Password -->
         <div class="flex items-center justify-between">
-          <label class="flex items-center space-x-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              v-model="form.rememberMe"
-              class="w-4 h-4 rounded border-gray-700 text-[#4CAF50] focus:ring-[#4CAF50] focus:ring-offset-0 bg-[#232936]"
-            />
-            <span class="text-gray-400 text-sm">Remember me</span>
-          </label>
-          <NuxtLink 
-            to="/forgot-password" 
-            class="text-sm text-[#4CAF50] hover:text-[#45a049] transition-colors"
-          >
-            Forgot password?
-          </NuxtLink>
+          <UCheckbox label="Remember me" />
+
+          <ULink to="/forgot-password"> Forgot password? </ULink>
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="p-4 bg-red-900/50 text-red-200 rounded-lg text-sm">
+        <div
+          v-if="errorMessage"
+          class="p-4 bg-red-900/50 text-red-200 rounded-lg text-sm"
+        >
           {{ errorMessage }}
         </div>
 
@@ -85,66 +70,64 @@
         <!-- Register Link -->
         <div class="text-center mt-6">
           <span class="text-gray-400">Don't have an account? </span>
-          <NuxtLink to="/register" class="text-[#4CAF50] hover:text-[#45a049] transition-colors">
-            Sign Up
-          </NuxtLink>
+          <ULink to="/register"> Sign Up </ULink>
         </div>
-      </form>
-    </div>
+      </UForm>
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from '#imports'
-import { useSupabaseClient } from '#imports'
-import type { Database } from '../../types/supabase'
+import { UCard, UForm, ULink } from "#components";
+import { ref, reactive } from "#imports";
+import { useSupabaseClient } from "#imports";
+import type { Database } from "../../types/supabase";
 
 interface FormState {
-  email: string
-  password: string
-  rememberMe: boolean
+  email: string;
+  password: string;
+  rememberMe: boolean;
 }
 
 definePageMeta({
-  layout: 'auth'
-})
+  layout: "auth",
+});
 
-const router = useRouter()
-const supabase = useSupabaseClient<Database>()
-const isLoading = ref(false)
-const errorMessage = ref('')
-const showPassword = ref(false)
+const router = useRouter();
+const supabase = useSupabaseClient<Database>();
+const isLoading = ref(false);
+const errorMessage = ref("");
+const showPassword = ref(false);
 
 const form = reactive<FormState>({
-  email: '',
-  password: '',
-  rememberMe: false
-})
+  email: "",
+  password: "",
+  rememberMe: false,
+});
 
 const login = async () => {
   try {
-    errorMessage.value = ''
-    isLoading.value = true
+    errorMessage.value = "";
+    isLoading.value = true;
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: form.email,
-      password: form.password
-    })
+      password: form.password,
+    });
 
     if (error) {
-      console.error('Login error:', error)
-      errorMessage.value = error.message
-      return
+      console.error("Login error:", error);
+      errorMessage.value = error.message;
+      return;
     }
 
     // Successful login
-    await router.push('/')
+    await router.push("/");
   } catch (error) {
-    console.error('Unexpected error:', error)
-    errorMessage.value = 'An unexpected error occurred'
+    console.error("Unexpected error:", error);
+    errorMessage.value = "An unexpected error occurred";
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 </script>
-  
