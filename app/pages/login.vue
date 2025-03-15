@@ -16,6 +16,8 @@
             size="xl"
             placeholder="Enter your email"
             class="w-full"
+            type="email"
+            icon="i-lucide-mail"
             v-model="form.email"
           />
         </UFormField>
@@ -25,6 +27,7 @@
             class="w-full"
             placeholder="Password"
             size="xl"
+            icon="i-lucide-lock"
             :type="showPassword ? 'text' : 'password'"
             :ui="{ trailing: 'pe-1' }"
           >
@@ -58,14 +61,10 @@
         </div>
 
         <!-- Login Button -->
-        <button
-          type="submit"
-          class="w-full py-3 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45a049] transition-colors font-medium"
-          :disabled="isLoading"
-        >
+        <UButton type="submit" block :loading="isLoading" :disabled="isLoading">
           <span v-if="isLoading">Signing in...</span>
           <span v-else>Sign In</span>
-        </button>
+        </UButton>
 
         <!-- Register Link -->
         <div class="text-center mt-6">
