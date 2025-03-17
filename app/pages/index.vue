@@ -25,42 +25,140 @@
     </div>
 
     <!-- Authenticated User -->
-    <div v-else>
-      <!-- Passenger Dashboard -->
-      <PassengerDashboard v-if="userRole === 'passenger'" />
-
-      <!-- Driver Dashboard -->
-      <DriverDashboard v-else-if="userRole === 'driver'" />
-
-   
-      <!-- Sign Out Button -->
-      <div class="fixed top-4 right-4">
+    <div v-else class="min-h-screen">
+      <!-- Toggle Menu Button -->
+      <div class="fixed top-4 left-4 z-[100]">
         <UButton
-          color="neutral"
-          variant="soft"
-          icon="i-lucide-log-out"
-          @click="signOut"
+          icon="i-heroicons-bars-3"
+          color="primary"
+          variant="ghost"
+          @click="isSidebarOpen = !isSidebarOpen"
+        />
+      </div>
+
+      <div class="flex pt-14">
+        <!-- Side Navigation -->
+        <USidebar
+          v-model="isSidebarOpen"
+          :class="{
+            'fixed inset-y-0 left-0 z-50 w-64 top-14': true,
+            'translate-x-0': isSidebarOpen,
+            '-translate-x-full': !isSidebarOpen
+          }"
+          class="h-[calc(100vh-3.5rem)] transition-transform duration-300 ease-in-out"
         >
-          Sign Out
-        </UButton>
+          <template #header>
+            <div class="p-4">
+              <h2 class="text-xl font-semibold">Bus System</h2>
+              <p class="text-sm opacity-50">{{ userRole }} portal</p>
+            </div>
+          </template>
+
+          <div class="flex-1 p-4 space-y-2">
+            <UButton
+              v-for="link in navigationLinks"
+              :key="link.label"
+              :icon="link.icon"
+              variant="ghost"
+              class="w-full justify-start"
+              :class="{ 'bg-gray-100 dark:bg-gray-800': currentView === link.view }"
+              @click="link.click"
+            >
+              {{ link.label }}
+            </UButton>
+          </div>
+        </USidebar>
+
+        <!-- Main Content -->
+        <main 
+          class="flex-1 transition-all duration-300 ease-in-out min-h-screen w-full"
+          :class="{ 'pl-64': isSidebarOpen }"
+        >
+          <div class="p-4">
+            <!-- Content based on current route -->
+            <div v-if="currentView === 'dashboard'">
+              <PassengerDashboard v-if="userRole === 'passenger'" />
+              <DriverDashboard v-else-if="userRole === 'driver'" />
+            </div>
+
+            <div v-else-if="currentView === 'wallet' && userRole === 'passenger'">
+              <div class="max-w-3xl mx-auto">
+                <WalletCard />
+              </div>
+            </div>
+
+            <div v-else-if="currentView === 'profile'">
+              <div class="max-w-3xl mx-auto">
+                <h2 class="text-2xl font-semibold mb-4">Profile</h2>
+                <p>Profile settings coming soon...</p>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 
 const isLoading = ref(true)
 const error = ref('')
 const userRole = ref<'passenger' | 'driver' | null>(null)
+const currentView = ref('dashboard')
+const isSidebarOpen = ref(false)
+
+// Navigation links based on user role
+const navigationLinks = computed(() => {
+  const baseLinks = [
+    {
+      label: 'Dashboard',
+      icon: 'i-lucide-layout-dashboard',
+      view: 'dashboard',
+      click: () => setCurrentView('dashboard')
+    },
+    {
+      label: 'Profile',
+      icon: 'i-lucide-user',
+      view: 'profile',
+      click: () => setCurrentView('profile')
+    }
+  ]
+
+  // Add wallet link for passengers only
+  if (userRole.value === 'passenger') {
+    baseLinks.splice(1, 0, {
+      label: 'Wallet',
+      icon: 'i-lucide-wallet',
+      view: 'wallet',
+      click: () => setCurrentView('wallet')
+    })
+  }
+
+  // Add sign out link at the bottom
+  baseLinks.push({
+    label: 'Sign Out',
+    icon: 'i-lucide-log-out',
+    view: 'signout',
+    click: signOut
+  })
+
+  return baseLinks
+})
+
+// Set current view
+const setCurrentView = (view: string) => {
+  currentView.value = view
+}
 
 // Sign out function
 const signOut = async () => {
@@ -75,25 +173,20 @@ const signOut = async () => {
 
 // Fetch user role from the database
 const fetchUserRole = async () => {
-  if (!user.value?.id) return
+  if (!user.value) return
 
   try {
-    const { data, error: fetchError } = await supabase
+    const { data, error: err } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.value.id)
       .single()
 
-    if (fetchError) throw fetchError
-
-    if (data?.role === 'passenger' || data?.role === 'driver') {
-      userRole.value = data.role
-    } else {
-      userRole.value = null
-    }
+    if (err) throw err
+    userRole.value = data.role as 'passenger' | 'driver'
   } catch (err) {
     console.error('Error fetching user role:', err)
-    error.value = 'Failed to load user information'
+    error.value = 'Failed to load user role'
   } finally {
     isLoading.value = false
   }
@@ -105,10 +198,10 @@ watch(user, (newUser) => {
     fetchUserRole()
   } else {
     userRole.value = null
-    isLoading.value = false
   }
 }, { immediate: true })
-
 </script>
+
+
 
 

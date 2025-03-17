@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen p-6 ">
+  <div class="min-h-screen p-6">
     <!-- Header -->
     <div class="max-w-3xl mx-auto mb-8">
       <h1 class="text-2xl font-semibold mb-2">Welcome, Passenger</h1>
-      <p >Select a route to view details and book your journey</p>
+      <p>Select a route to view details and book your journey</p>
     </div>
 
     <!-- Main Content -->
@@ -68,7 +68,7 @@
 
               <div class="grid grid-cols-2 gap-6">
                 <div>
-                  <div class="text-sm">Distance</div>
+                  <div class="text-sm text-gray-400">Distance</div>
                   <div class="text-lg">{{ route.distance }} km</div>
                 </div>
                 <div>
