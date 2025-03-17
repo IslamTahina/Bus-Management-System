@@ -124,7 +124,6 @@ interface FormState {
 }
 
 interface UserInsert {
-  id: string
   email: string
   role: 'passenger' | 'driver'
 }
@@ -197,7 +196,6 @@ const register = async () => {
       if (!existingUser) {
         // Insert new user
         const newUser: UserInsert = {
-          id: userId,
           email: form.email,
           role: 'passenger'
         }
