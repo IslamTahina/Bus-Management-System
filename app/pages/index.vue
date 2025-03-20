@@ -81,9 +81,10 @@
               <DriverDashboard v-else-if="userRole === 'driver'" />
             </div>
 
-            <div v-else-if="currentView === 'wallet' && userRole === 'passenger'">
+            <div v-else-if="currentView === 'wallet'">
               <div class="max-w-3xl mx-auto">
-                <WalletCard />
+                <WalletCard v-if="userRole === 'passenger'" />
+                <DriverWalletCard v-else-if="userRole === 'driver'" />
               </div>
             </div>
 
@@ -105,6 +106,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
 import { useRouter, useRoute } from 'vue-router'
+import WalletCard from '../components/WalletCard.vue'
+import DriverWalletCard from '../components/DriverWalletCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -127,22 +130,18 @@ const navigationLinks = computed(() => {
       click: () => setCurrentView('dashboard')
     },
     {
+      label: 'Wallet',
+      icon: 'i-lucide-wallet',
+      view: 'wallet',
+      click: () => setCurrentView('wallet')
+    },
+    {
       label: 'Profile',
       icon: 'i-lucide-user',
       view: 'profile',
       click: () => setCurrentView('profile')
     }
   ]
-
-  // Add wallet link for passengers only
-  if (userRole.value === 'passenger') {
-    baseLinks.splice(1, 0, {
-      label: 'Wallet',
-      icon: 'i-lucide-wallet',
-      view: 'wallet',
-      click: () => setCurrentView('wallet')
-    })
-  }
 
   // Add sign out link at the bottom
   baseLinks.push({

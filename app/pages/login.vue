@@ -78,8 +78,7 @@
 
 <script setup lang="ts">
 import { UCard, UForm, ULink } from "#components";
-import { ref, reactive } from "#imports";
-import { useSupabaseClient } from "#imports";
+import { ref, reactive, useRouter, useSupabaseClient } from "#imports";
 import type { Database } from "../../types/supabase";
 
 interface FormState {
@@ -88,9 +87,6 @@ interface FormState {
   rememberMe: boolean;
 }
 
-definePageMeta({
-  layout: "auth",
-});
 
 const router = useRouter();
 const supabase = useSupabaseClient<Database>();
