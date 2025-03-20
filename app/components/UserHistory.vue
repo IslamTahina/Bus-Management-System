@@ -124,8 +124,8 @@ const formatDate = (dateString: string) => {
 
 <template>
   <div>
-    <!-- Debug Info - Always show this while developing -->
-    <div class="mb-4">
+    <!-- Debug Info -->
+    <div v-if="error" class="mb-4">
       <UAlert
         color="info"
         :title="'Debug Info'"
