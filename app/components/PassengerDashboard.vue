@@ -94,6 +94,32 @@
         </template>
       </div>
     </div>
+
+    <!-- QR Code Modal -->
+    <UModal v-model="showQRModal">
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium">Your Booking QR Code</h3>
+            <UButton
+              variant="ghost"
+              icon="i-lucide-x"
+              size="sm"
+              @click="showQRModal = false"
+            />
+          </div>
+        </template>
+        
+        <div class="space-y-4 p-4">
+          <div v-if="bookingQR" class="flex justify-center">
+            <img :src="bookingQR" alt="Booking QR Code" class="w-64 h-64" />
+          </div>
+          <div class="text-center text-sm text-gray-400">
+            Show this QR code to the driver to confirm your booking
+          </div>
+        </div>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -101,6 +127,7 @@
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
 import type { Database } from '../../types/supabase'
+import QRCode from 'qrcode'
 
 type Route = Database['public']['Tables']['routes']['Row']
 
@@ -109,6 +136,8 @@ const routes = ref<Route[]>([])
 const selectedRoute = ref<Route | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+const showQRModal = ref(false)
+const bookingQR = ref<string | null>(null)
 
 // Fetch routes from Supabase
 const fetchRoutes = async () => {
@@ -138,9 +167,32 @@ const bookRoute = async () => {
   if (!selectedRoute.value) return
 
   try {
-    // TODO: Implement booking logic
-    console.log('Booking route:', selectedRoute.value.id)
-    selectedRoute.value = null
+    // Create a booking record
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .insert({
+        booking_time: new Date().toISOString(),
+        route_id: selectedRoute.value.id,
+        payment_status: 'pending',
+        tokens_used: selectedRoute.value.fare
+      })
+      .select()
+      .single()
+
+    if (bookingError) throw bookingError
+
+    // Generate QR code with booking information
+    const qrData = JSON.stringify({
+      booking_id: booking.id,
+      route_id: selectedRoute.value.id,
+      tokens: selectedRoute.value.fare,
+      timestamp: new Date().toISOString()
+    })
+
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData)
+    bookingQR.value = qrCodeDataUrl
+    showQRModal.value = true
+
   } catch (err) {
     console.error('Error booking route:', err)
     error.value = 'Failed to book route'

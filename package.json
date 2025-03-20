@@ -18,8 +18,10 @@
     "@nuxt/ui": "^3.0.0",
     "@nuxtjs/supabase": "1.5.0",
     "@supabase/supabase-js": "^2.49.1",
+    "@types/qrcode": "^1.5.5",
     "nuxt": "^3.16.0",
-    "nuxt-icon": "^1.0.0-beta.7"
+    "nuxt-icon": "^1.0.0-beta.7",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.2.0",
