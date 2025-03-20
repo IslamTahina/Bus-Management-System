@@ -88,6 +88,12 @@
               </div>
             </div>
 
+            <div v-else-if="currentView === 'history'">
+              <div class="max-w-3xl mx-auto">
+                <UserHistory />
+              </div>
+            </div>
+
             <div v-else-if="currentView === 'profile'">
               <div class="max-w-3xl mx-auto">
                 <h2 class="text-2xl font-semibold mb-4">Profile</h2>
@@ -108,6 +114,7 @@ import type { Database } from '../../types/supabase'
 import { useRouter, useRoute } from 'vue-router'
 import WalletCard from '../components/WalletCard.vue'
 import DriverWalletCard from '../components/DriverWalletCard.vue'
+import UserHistory from '../components/UserHistory.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -134,6 +141,12 @@ const navigationLinks = computed(() => {
       icon: 'i-lucide-wallet',
       view: 'wallet',
       click: () => setCurrentView('wallet')
+    },
+    {
+      label: 'History',
+      icon: 'i-lucide-history',
+      view: 'history',
+      click: () => setCurrentView('history')
     },
     {
       label: 'Profile',
