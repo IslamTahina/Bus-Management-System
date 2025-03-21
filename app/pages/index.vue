@@ -79,6 +79,7 @@
             <div v-if="currentView === 'dashboard'">
               <PassengerDashboard v-if="userRole === 'passenger'" />
               <DriverDashboard v-else-if="userRole === 'driver'" />
+              <AdminDashboard v-else-if="userRole === 'admin'" />
             </div>
 
             <div v-else-if="currentView === 'wallet'">
@@ -115,6 +116,7 @@ import { useRouter, useRoute } from 'vue-router'
 import WalletCard from '../components/WalletCard.vue'
 import DriverWalletCard from '../components/DriverWalletCard.vue'
 import UserHistory from '../components/UserHistory.vue'
+import AdminDashboard from '../components/AdminDashboard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -123,7 +125,7 @@ const user = useSupabaseUser()
 
 const isLoading = ref(true)
 const error = ref('')
-const userRole = ref<'passenger' | 'driver' | null>(null)
+const userRole = ref<'passenger' | 'driver' | 'admin' | null>(null)
 const currentView = ref('dashboard')
 const isSidebarOpen = ref(false)
 
@@ -135,34 +137,57 @@ const navigationLinks = computed(() => {
       icon: 'i-lucide-layout-dashboard',
       view: 'dashboard',
       click: () => setCurrentView('dashboard')
-    },
-    {
-      label: 'Wallet',
-      icon: 'i-lucide-wallet',
-      view: 'wallet',
-      click: () => setCurrentView('wallet')
-    },
-    {
-      label: 'History',
-      icon: 'i-lucide-history',
-      view: 'history',
-      click: () => setCurrentView('history')
-    },
+    }
+  ]
+
+  // Add role-specific links
+  if (userRole.value === 'admin') {
+    baseLinks.push(
+      {
+        label: 'Manage Users',
+        icon: 'i-lucide-users',
+        view: 'users',
+        click: () => setCurrentView('users')
+      },
+      {
+        label: 'System Settings',
+        icon: 'i-lucide-settings',
+        view: 'settings',
+        click: () => setCurrentView('settings')
+      }
+    )
+  } else {
+    baseLinks.push(
+      {
+        label: 'Wallet',
+        icon: 'i-lucide-wallet',
+        view: 'wallet',
+        click: () => setCurrentView('wallet')
+      },
+      {
+        label: 'History',
+        icon: 'i-lucide-history',
+        view: 'history',
+        click: () => setCurrentView('history')
+      }
+    )
+  }
+
+  // Add profile and sign out links for all roles
+  baseLinks.push(
     {
       label: 'Profile',
       icon: 'i-lucide-user',
       view: 'profile',
       click: () => setCurrentView('profile')
+    },
+    {
+      label: 'Sign Out',
+      icon: 'i-lucide-log-out',
+      view: 'signout',
+      click: signOut
     }
-  ]
-
-  // Add sign out link at the bottom
-  baseLinks.push({
-    label: 'Sign Out',
-    icon: 'i-lucide-log-out',
-    view: 'signout',
-    click: signOut
-  })
+  )
 
   return baseLinks
 })
@@ -195,7 +220,7 @@ const fetchUserRole = async () => {
       .single()
 
     if (err) throw err
-    userRole.value = data.role as 'passenger' | 'driver'
+    userRole.value = data.role as 'passenger' | 'driver' | 'admin'
   } catch (err) {
     console.error('Error fetching user role:', err)
     error.value = 'Failed to load user role'
