@@ -45,7 +45,7 @@ export type Database = {
             foreignKeyName: "bookings_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
-            referencedRelation: "customers"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -56,77 +56,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      buses: {
-        Row: {
-          available_seats: number
-          driver_id: string | null
-          id: string
-          latitude: number | null
-          longitude: number | null
-          route: string
-          route_geom: unknown | null
-          seat_count: number
-          status: string | null
-          stops: Json | null
-        }
-        Insert: {
-          available_seats: number
-          driver_id?: string | null
-          id?: string
-          latitude?: number | null
-          longitude?: number | null
-          route: string
-          route_geom?: unknown | null
-          seat_count: number
-          status?: string | null
-          stops?: Json | null
-        }
-        Update: {
-          available_seats?: number
-          driver_id?: string | null
-          id?: string
-          latitude?: number | null
-          longitude?: number | null
-          route?: string
-          route_geom?: unknown | null
-          seat_count?: number
-          status?: string | null
-          stops?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "buses_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      customers: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
       }
       drivers: {
         Row: {
@@ -306,72 +235,129 @@ export type Database = {
         }
         Relationships: []
       }
-      token_transactions: {
+      transactions: {
         Row: {
-          booking_id: string | null
           created_at: string | null
-          customer_id: string | null
           id: string
           tokens: number
           transaction_time: string | null
           transaction_type: string
+          trip_id: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          booking_id?: string | null
           created_at?: string | null
-          customer_id?: string | null
           id?: string
           tokens: number
           transaction_time?: string | null
           transaction_type: string
+          trip_id?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          booking_id?: string | null
           created_at?: string | null
-          customer_id?: string | null
           id?: string
           tokens?: number
           transaction_time?: string | null
           transaction_type?: string
+          trip_id?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "token_transactions_booking_id_fkey"
-            columns: ["booking_id"]
+            foreignKeyName: "transactions_trip_id_fkey"
+            columns: ["trip_id"]
             isOneToOne: false
-            referencedRelation: "bookings"
+            referencedRelation: "trips"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "token_transactions_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "customers"
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          created_at: string | null
+          direction: boolean | null
+          id: string
+          route_id: string | null
+          seats_capacity: number
+          start_time: string
+          updated_at: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          direction?: boolean | null
+          id?: string
+          route_id?: string | null
+          seats_capacity: number
+          start_time: string
+          updated_at?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          direction?: boolean | null
+          id?: string
+          route_id?: string | null
+          seats_capacity?: number
+          start_time?: string
+          updated_at?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
       }
       users: {
         Row: {
+          balance: number
           created_at: string | null
-          email: string
           id: string
-          role: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
+          balance?: number
           created_at?: string | null
-          email: string
           id?: string
-          role?: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
+          balance?: number
           created_at?: string | null
-          email?: string
           id?: string
-          role?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3490,7 +3476,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "driver" | "passenger" | "admin"
     }
     CompositeTypes: {
       geometry_dump: {

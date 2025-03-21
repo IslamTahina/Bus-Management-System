@@ -216,7 +216,7 @@ const fetchUserRole = async () => {
     const { data, error: err } = await supabase
       .from('users')
       .select('role')
-      .eq('id', user.value.id)
+      .eq('user_id', user.value.id)
       .single()
 
     if (err) throw err
