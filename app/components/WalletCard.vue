@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
 
@@ -11,45 +11,51 @@ const error = ref<string | null>(null)
 const showPurchaseModal = ref(false)
 const purchaseAmount = ref<string>('')
 
-// Fetch token balance
-const fetchTokenBalance = async () => {
+// Fetch token balance and setup real-time subscription
+const setupBalanceSubscription = async () => {
   if (!user.value) return
 
   try {
-    // First get the customer ID
-    const { data: customerData, error: customerErr } = await supabase
-      .from('customers')
-      .select('id')
+    // Get initial balance
+    const { data: userData, error: userErr } = await supabase
+      .from('users')
+      .select('balance')
       .eq('user_id', user.value.id)
       .single()
 
-    if (customerErr) throw customerErr
-    if (!customerData) {
-      error.value = 'Customer record not found'
+    if (userErr) throw userErr
+    if (!userData) {
+      error.value = 'User record not found'
       return
     }
 
-    // Get all token transactions for the customer
-    const { data: transactions, error: txErr } = await supabase
-      .from('token_transactions')
-      .select('tokens, transaction_type')
-      .eq('customer_id', customerData.id)
+    tokenBalance.value = userData.balance
 
-    if (txErr) throw txErr
+    // Setup real-time subscription
+    const subscription = supabase
+      .channel('balance_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users',
+          filter: `user_id=eq.${user.value.id}`
+        },
+        (payload) => {
+          if (payload.new && 'balance' in payload.new) {
+            tokenBalance.value = payload.new.balance
+          }
+        }
+      )
+      .subscribe()
 
-    // Calculate total balance
-    const balance = transactions?.reduce((total, tx) => {
-      if (tx.transaction_type === 'purchase') {
-        return total + tx.tokens
-      } else if (tx.transaction_type === 'booking') {
-        return total - tx.tokens
-      }
-      return total
-    }, 0) || 0
-
-    tokenBalance.value = balance
+    // Cleanup subscription on component unmount
+    onUnmounted(() => {
+      subscription.unsubscribe()
+    })
   } catch (err) {
-    console.error('Error fetching token balance:', err)
+    console.error('Error setting up balance subscription:', err)
     error.value = 'Failed to load token balance'
   } finally {
     isLoading.value = false
@@ -62,36 +68,32 @@ const purchaseTokens = async () => {
   if (amount <= 0) return
 
   try {
-    // First get the customer ID
     if (!user.value?.id) {
       error.value = 'User not found'
       return
     }
 
-    const { data: customerData, error: customerErr } = await supabase
-      .from('customers')
-      .select('id')
+    // Update user's balance
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({ 
+        balance: tokenBalance.value + amount 
+      })
       .eq('user_id', user.value.id)
-      .single()
 
-    if (customerErr) throw customerErr
-    if (!customerData) {
-      error.value = 'Customer record not found'
-      return
-    }
+    if (updateErr) throw updateErr
 
-    const { error: err } = await supabase
-      .from('token_transactions')
+    // Record the transaction
+    const { error: txErr } = await supabase
+      .from('transactions')
       .insert({
         tokens: amount,
         transaction_type: 'purchase',
-        customer_id: customerData.id
+        user_id: user.value.id
       })
 
-    if (err) throw err
+    if (txErr) throw txErr
 
-    // Update local token balance
-    tokenBalance.value += amount
     showPurchaseModal.value = false
     purchaseAmount.value = ''
   } catch (err) {
@@ -101,7 +103,7 @@ const purchaseTokens = async () => {
 }
 
 onMounted(() => {
-  fetchTokenBalance()
+  setupBalanceSubscription()
 })
 </script>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
 
@@ -10,45 +10,51 @@ const tokenBalance = ref(0)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
-// Fetch token balance
-const fetchTokenBalance = async () => {
+// Fetch token balance and setup real-time subscription
+const setupBalanceSubscription = async () => {
   if (!user.value) return
 
   try {
-    // First get the driver's ID
-    const { data: driverData, error: driverErr } = await supabase
-      .from('drivers')
-      .select('id')
+    // Get initial balance
+    const { data: userData, error: userErr } = await supabase
+      .from('users')
+      .select('balance')
       .eq('user_id', user.value.id)
       .single()
 
-    if (driverErr) throw driverErr
-    if (!driverData) {
-      error.value = 'Driver record not found'
+    if (userErr) throw userErr
+    if (!userData) {
+      error.value = 'User record not found'
       return
     }
 
-    // Get the driver's token balance
-    const { data: balanceData, error: balanceErr } = await supabase
-      .from('token_transactions')
-      .select('tokens')
-      .eq('driver_id', driverData.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
+    tokenBalance.value = userData.balance
 
-    if (balanceErr) {
-      // If no transactions found, balance is 0
-      if (balanceErr.code === 'PGRST116') {
-        tokenBalance.value = 0
-        return
-      }
-      throw balanceErr
-    }
+    // Setup real-time subscription
+    const subscription = supabase
+      .channel('driver_balance_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users',
+          filter: `user_id=eq.${user.value.id}`
+        },
+        (payload) => {
+          if (payload.new && 'balance' in payload.new) {
+            tokenBalance.value = payload.new.balance
+          }
+        }
+      )
+      .subscribe()
 
-    tokenBalance.value = balanceData?.tokens || 0
+    // Cleanup subscription on component unmount
+    onUnmounted(() => {
+      subscription.unsubscribe()
+    })
   } catch (err) {
-    console.error('Error fetching token balance:', err)
+    console.error('Error setting up balance subscription:', err)
     error.value = 'Failed to load token balance'
   } finally {
     isLoading.value = false
@@ -56,7 +62,7 @@ const fetchTokenBalance = async () => {
 }
 
 onMounted(() => {
-  fetchTokenBalance()
+  setupBalanceSubscription()
 })
 </script>
 
