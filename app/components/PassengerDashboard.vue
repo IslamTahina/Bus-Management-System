@@ -2,8 +2,15 @@
   <div class="min-h-screen p-6">
     <!-- Header -->
     <div class="max-w-3xl mx-auto mb-8">
-      <h1 class="text-2xl font-semibold mb-2">Welcome, Passenger</h1>
-      <p>Select a route to view details and book your journey</p>
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-semibold mb-2">Welcome, Passenger</h1>
+          <p>Select a route to view details and book your journey</p>
+        </div>
+        <UBadge v-if="userDetails" color="primary" size="lg" class="px-4 py-2">
+          Balance: {{ userDetails.balance }} tokens
+        </UBadge>
+      </div>
     </div>
 
     <!-- Main Content -->
@@ -14,7 +21,13 @@
       </div>
 
       <!-- Error State -->
-      <UAlert v-else-if="error" color="red" :title="error" />
+      <UAlert
+        v-else-if="error"
+        :title="error"
+        color="red"
+        variant="solid"
+        class="mb-4"
+      />
 
       <!-- Routes List -->
       <div v-else class="space-y-2">
@@ -82,8 +95,18 @@
                 <div class="text-lg">{{ route.fare }} tokens</div>
               </div>
 
-              <UButton color="primary" block @click="bookRoute">
-                Book This Route
+              <UButton 
+                color="primary" 
+                block 
+                :disabled="userDetails?.balance < route.fare"
+                @click="bookRoute"
+              >
+                <span v-if="userDetails?.balance >= route.fare">
+                  Book This Route
+                </span>
+                <span v-else>
+                  Insufficient Balance
+                </span>
               </UButton>
             </div>
           </UCard>
@@ -122,19 +145,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useSupabaseClient } from "#imports";
+import { useSupabaseClient, useSupabaseUser } from "#imports";
 import type { Database } from "../../types/supabase";
 import QRCode from "qrcode";
 
 type Route = Database["public"]["Tables"]["routes"]["Row"];
 
 const supabase = useSupabaseClient<Database>();
+const user = useSupabaseUser();
 const routes = ref<Route[]>([]);
 const selectedRoute = ref<Route | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 const showQRModal = ref(false);
 const bookingQR = ref<string | null>(null);
+const userDetails = ref<{ id: string; balance: number } | null>(null);
 
 // Fetch routes from Supabase
 const fetchRoutes = async () => {
@@ -154,6 +179,25 @@ const fetchRoutes = async () => {
   }
 };
 
+// Fetch user details including balance
+const fetchUserDetails = async () => {
+  if (!user.value) return null;
+  
+  try {
+    const { data, error: err } = await supabase
+      .from('users')
+      .select('id, balance')
+      .eq('user_id', user.value.id)
+      .single()
+
+    if (err) throw err
+    userDetails.value = data
+  } catch (err) {
+    console.error('Error fetching user details:', err)
+    error.value = 'Failed to load user details'
+  }
+}
+
 // Select a route
 const selectRoute = (route: Route) => {
   selectedRoute.value = selectedRoute.value?.id === route.id ? null : route;
@@ -161,41 +205,79 @@ const selectRoute = (route: Route) => {
 
 // Book the selected route
 const bookRoute = async () => {
-  if (!selectedRoute.value) return;
+  if (!selectedRoute.value || !userDetails.value) return;
 
   try {
-    // Create a booking record
+    error.value = null;
+
+    // Check if user has sufficient balance
+    if (userDetails.value.balance < selectedRoute.value.fare) {
+      error.value = 'Insufficient token balance';
+      return;
+    }
+    console.log("Trying to book with tokens:", selectedRoute.value.fare);
+
+    // Start a transaction
     const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
+      .from('bookings')
       .insert({
         booking_time: new Date().toISOString(),
         route_id: selectedRoute.value.id,
-        payment_status: "pending",
+        customer_id: userDetails.value.id,
+        payment_status: 'pending',
         tokens_used: selectedRoute.value.fare,
       })
       .select()
-      .single();
+      .single()
 
-    if (bookingError) throw bookingError;
+    if (bookingError) throw bookingError
+
+    // Create a transaction record for token deduction
+    const { error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: userDetails.value.id,
+        tokens: -selectedRoute.value.fare,
+        transaction_type: 'debit',
+        transaction_time: new Date().toISOString(),
+      })
+
+    if (txError) throw txError
+
+    // Update user's balance
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        balance: userDetails.value.balance - selectedRoute.value.fare,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userDetails.value.id)
+
+    if (updateError) throw updateError
+
+    // Update local user details
+    userDetails.value.balance -= selectedRoute.value.fare
 
     // Generate QR code with booking information
     const qrData = JSON.stringify({
       booking_id: booking.id,
       route_id: selectedRoute.value.id,
+      customer_id: userDetails.value.id,
       tokens: selectedRoute.value.fare,
       timestamp: new Date().toISOString(),
-    });
+    })
 
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData);
-    bookingQR.value = qrCodeDataUrl;
-    showQRModal.value = true;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData)
+    bookingQR.value = qrCodeDataUrl
+    showQRModal.value = true
   } catch (err) {
-    console.error("Error booking route:", err);
-    error.value = "Failed to book route";
+    console.error('Error booking route:', err)
+    error.value = 'Failed to book route'
   }
-};
+}
 
 onMounted(() => {
   fetchRoutes();
+  fetchUserDetails();
 });
 </script>
