@@ -113,33 +113,6 @@
         </template>
       </div>
     </div>
-
-    <!-- QR Code Modal -->
-    <UModal v-model="showQRModal">
-      <UCard :ui="{ divide: '' }">
-        <template #header>
-          <div class="flex justify-between">
-            <h3 class="text-lg font-medium">Your Booking QR Code</h3>
-            <UButton
-              color="gray"
-              variant="ghost"
-              icon="i-lucide-x"
-              size="sm"
-              @click="showQRModal = false"
-            />
-          </div>
-        </template>
-
-        <div class="space-y-4">
-          <div v-if="bookingQR" class="flex justify-center">
-            <img :src="bookingQR" alt="Booking QR Code" class="w-64 h-64" />
-          </div>
-          <p class="text-center text-sm text-gray-400">
-            Show this QR code to the driver to confirm your booking
-          </p>
-        </div>
-      </UCard>
-    </UModal>
   </div>
 </template>
 
