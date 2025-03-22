@@ -145,11 +145,6 @@ onMounted(() => {
     </UCard>
 
     <!-- Purchase Modal -->
-    <UModal 
-      v-model="showPurchaseModal"
-      :close-button="false"
-      :prevent-close="true"
-    >
       <UCard>
         <template #header>
           <h3 class="text-lg font-medium">Purchase Tokens</h3>
@@ -206,6 +201,5 @@ onMounted(() => {
           </div>
         </template>
       </UCard>
-    </UModal>
   </div>
 </template> 
