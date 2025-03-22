@@ -13,23 +13,6 @@ export default defineNuxtConfig({
     colorMode: true
   },
 
-  // ui: {
-  //   icons: ['ph', 'logos']
-  // },
-
-  // tailwindcss: {
-  //   config: {
-  //     content: [],
-  //     theme: {
-  //       extend: {
-  //         colors: {
-  //           primary: '#E8F3D6'
-  //         }
-  //       }
-  //     }
-    // }
-  // },
-
   future: {
     compatibilityVersion: 4
   },
