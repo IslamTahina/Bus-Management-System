@@ -145,61 +145,61 @@ onMounted(() => {
     </UCard>
 
     <!-- Purchase Modal -->
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-medium">Purchase Tokens</h3>
-        </template>
+    <UCard v-if="showPurchaseModal">
+      <template #header>
+        <h3 class="text-lg font-medium">Purchase Tokens</h3>
+      </template>
 
-        <div class="space-y-4">
-          <UFormGroup label="Amount of tokens to purchase">
-            <UButtonGroup class="w-full">
-              <UInput
-                v-model="purchaseAmount"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                color="neutral"
-                variant="outline"
-                size="lg"
-                placeholder="Enter amount"
-                class="flex-1"
-                @keypress="(e: KeyboardEvent) => {
-                  if (!/[0-9]/.test(e.key)) {
-                    e.preventDefault()
-                  }
-                }"
-              />
-              <UButton
-                color="neutral"
-                variant="subtle"
-                icon="i-lucide-coins"
-                :disabled="!purchaseAmount || Number(purchaseAmount) <= 0"
-                @click="purchaseTokens"
-              >
-                Purchase
-              </UButton>
-            </UButtonGroup>
-            <p v-if="Number(purchaseAmount) < 0" class="text-sm text-red-500 mt-1">
-              Amount must be greater than 0
-            </p>
-          </UFormGroup>
-
-          <div class="text-sm text-gray-500">
-            Select the number of tokens you want to purchase
-          </div>
-        </div>
-
-        <template #footer>
-          <div class="flex justify-end">
-            <UButton
-              variant="ghost"
+      <div class="space-y-4">
+        <UFormGroup label="Amount of tokens to purchase">
+          <UButtonGroup class="w-full">
+            <UInput
+              v-model="purchaseAmount"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
               color="neutral"
-              @click="showPurchaseModal = false"
+              variant="outline"
+              size="lg"
+              placeholder="Enter amount"
+              class="flex-1"
+              @keypress="(e: KeyboardEvent) => {
+                if (!/[0-9]/.test(e.key)) {
+                  e.preventDefault()
+                }
+              }"
+            />
+            <UButton
+              color="neutral"
+              variant="subtle"
+              icon="i-lucide-coins"
+              :disabled="!purchaseAmount || Number(purchaseAmount) <= 0"
+              @click="purchaseTokens"
             >
-              Close
+              Purchase
             </UButton>
-          </div>
-        </template>
-      </UCard>
+          </UButtonGroup>
+          <p v-if="Number(purchaseAmount) < 0" class="text-sm text-red-500 mt-1">
+            Amount must be greater than 0
+          </p>
+        </UFormGroup>
+
+        <div class="text-sm text-gray-500">
+          Select the number of tokens you want to purchase
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            @click="showPurchaseModal = false"
+          >
+            Close
+          </UButton>
+        </div>
+      </template>
+    </UCard>
   </div>
 </template> 
