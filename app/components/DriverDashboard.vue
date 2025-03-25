@@ -46,8 +46,8 @@ const fetchAssignedRoute = async () => {
 
     // Get the bus assigned to the driver
     const { data: busData, error: busErr } = await supabase
-      .from('buses')
-      .select('route')
+      .from('vehicles')
+      .select('*')
       .eq('driver_id', driverData.id)
       .single()
 

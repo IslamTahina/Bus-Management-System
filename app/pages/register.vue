@@ -74,8 +74,12 @@
                 color="neutral"
                 variant="link"
                 size="sm"
-                :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'"
+                :icon="
+                  showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'
+                "
+                :aria-label="
+                  showConfirmPassword ? 'Hide password' : 'Show password'
+                "
                 :aria-pressed="showConfirmPassword"
                 @click="showConfirmPassword = !showConfirmPassword"
               />
@@ -92,13 +96,8 @@
         </div>
 
         <!-- Register Button -->
-        <UButton
-          type="submit"
-          block
-          :loading="isLoading"
-          :disabled="isLoading"
-        >
-          {{ isLoading ? 'Registering...' : 'Sign Up' }}
+        <UButton type="submit" block :loading="isLoading" :disabled="isLoading">
+          {{ isLoading ? "Registering..." : "Sign Up" }}
         </UButton>
 
         <!-- Sign In Link -->
@@ -112,54 +111,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from '#imports'
-import { useSupabaseClient } from '#imports'
-import type { Database } from '../../types/supabase'
+import { ref, reactive } from "#imports";
+import { useSupabaseClient } from "#imports";
+import type { Database } from "../../types/supabase";
 
 interface FormState {
-  name: string
-  email: string
-  password: string
-  confirmPassword: string
-}
-
-interface UserInsert {
-  email: string
-  role: 'passenger' | 'driver'
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
 definePageMeta({
-  layout: 'auth'
-})
+  layout: "auth",
+});
 
-const router = useRouter()
-const supabase = useSupabaseClient<Database>()
-const isLoading = ref(false)
-const errorMessage = ref('')
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
+const router = useRouter();
+const supabase = useSupabaseClient<Database>();
+const isLoading = ref(false);
+const errorMessage = ref("");
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 const form = reactive<FormState>({
-  name: '',
-  email: '',
-  password: '',
-  confirmPassword: ''
-})
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
 
 const register = async () => {
   try {
-    errorMessage.value = ''
-    isLoading.value = true
+    errorMessage.value = "";
+    isLoading.value = true;
 
     // Validation
     if (!form.name || !form.email || !form.password || !form.confirmPassword) {
-      errorMessage.value = 'All fields are required.'
-      return
+      errorMessage.value = "All fields are required.";
+      return;
     }
 
     if (form.password !== form.confirmPassword) {
-      errorMessage.value = 'Passwords do not match.'
-      return
+      errorMessage.value = "Passwords do not match.";
+      return;
     }
 
     // Sign up user
@@ -168,57 +162,36 @@ const register = async () => {
       password: form.password,
       options: {
         data: {
-          full_name: form.name
-        }
-      }
+          full_name: form.name,
+        },
+      },
     })
 
     if (error) {
-      console.error('Supabase Auth Error:', error)
-      errorMessage.value = error.message
-      return
+      console.error("Supabase Auth Error:", error);
+      errorMessage.value = error.message;
+      return;
     }
 
-    const userId = data.user?.id
+    const userId = data.user?.id;
     if (userId) {
-      // Check if user already exists
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .single()
+      const { error: insertError } = await supabase.from("users").insert({
+        name: form.name
+      });
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking users table:', fetchError)
-        return
-      }
-
-      if (!existingUser) {
-        // Insert new user
-        const newUser: UserInsert = {
-          email: form.email,
-          role: 'passenger'
-        }
-
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([newUser])
-
-        if (insertError) {
-          console.error('Error inserting into users table:', insertError)
-          errorMessage.value = `Database error: ${insertError.message}`
-          return
-        }
+      if (insertError) {
+        console.error("Error inserting into users table:", insertError);
+        errorMessage.value = `Database error: ${insertError.message}`;
+        return;
       }
     }
 
-    await router.push('/')
+    await router.push("/");
   } catch (error) {
-    console.error('Registration error:', error)
-    errorMessage.value = 'An unexpected error occurred'
+    console.error("Registration error:", error);
+    errorMessage.value = "An unexpected error occurred";
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 </script>
-  
