@@ -1,27 +1,78 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
+import TripMap from './TripMap.vue'
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 
-interface RouteInfo {
+interface TripInfo {
   id: string
-  start_location: string
-  end_location: string
-  distance: number
-  average_time: number
-  fare: number
+  vehicle_id: string
+  route_id: string
+  direction: boolean
+  start_time: string
+  seats_capacity: number
+  created_at: string | null
+  updated_at: string | null
+  end_time?: string | null
+  vehicles: {
+    id: string
+    model: string
+    capacity: number
+    driver_id: string
+    license_plate: string
+  } | null
+  routes: {
+    id: string
+    fare: number
+    distance: number
+    average_time: number
+    end_location: string
+    start_location: string
+  } | null
 }
 
-const route = ref<RouteInfo | null>(null)
+const currentTrip = ref<TripInfo | null>(null)
+const upcomingTrips = ref<TripInfo[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-const debugInfo = ref('')
+const passengerCount = ref(0)
+const collectedFare = ref(0)
 
-// Fetch driver's assigned route
-const fetchAssignedRoute = async () => {
+// Computed properties
+const remainingSeats = computed(() => {
+  if (!currentTrip.value) return 0
+  return currentTrip.value.seats_capacity - passengerCount.value
+})
+const mockDestinationCoords = {
+    // -73.998319,40.712034
+    'Downtown': { lng: -73.998319, lat: 40.712034 }, // Miami Downtown
+    // -74.167901,40.733790
+    'Uptown': { lng: -74.167901, lat: 40.733790 },   // Miami Upper East Side
+    // -73.987155,40.750539
+    'Midtown': { lng: -73.987155, lat: 40.750539 },  // Miami Midtown
+  }
+const destinationLocation = computed(() => {
+  if (!currentTrip.value?.routes?.start_location) return undefined
+  
+  // This is a placeholder. In a real app, you would store lat/lng in the database
+  // For now, we'll use a geocoding service to convert the location string to coordinates
+  
+  
+  return mockDestinationCoords[currentTrip.value.routes.end_location as keyof typeof mockDestinationCoords]
+})
+const currentLocation = computed(() => {
+  if (!currentTrip.value?.routes?.end_location) return undefined
+  
+  // This is a placeholder. In a real app, you would store lat/lng in the database
+  // For now, we'll use a geocoding service to convert the location string to coordinates
+  return mockDestinationCoords[currentTrip.value.routes.start_location as keyof typeof mockDestinationCoords]
+})
+
+// Fetch driver's trips
+const fetchTrips = async () => {
   if (!user.value) {
     error.value = 'No user found'
     isLoading.value = false
@@ -29,58 +80,78 @@ const fetchAssignedRoute = async () => {
   }
 
   try {
-    // First get the driver's ID
-    const { data: driverData, error: driverErr } = await supabase
-      .from('drivers')
-      .select('id')
-      .eq('user_id', user.value.id)
-      .single()
+    const { data: trips, error: tripsErr } = await supabase
+      .from('trips')
+      .select('*, vehicles(*), routes(*)')
+      .eq('vehicles.driver_id', user.value.id)
+      .order('start_time', { ascending: true })
 
-    if (driverErr) throw driverErr
-    if (!driverData) {
-      error.value = 'Driver record not found'
-      return
+    if (tripsErr) throw tripsErr
+
+    if (trips && trips.length > 0) {
+      // Set current trip (first one without end_time)
+      const currentTripData = trips.find(trip => {
+        const tripEndTime = (trip as any).end_time
+        return tripEndTime === undefined || tripEndTime === null
+      })
+      
+      if (currentTripData) {
+        currentTrip.value = {
+          id: currentTripData.id,
+          vehicle_id: currentTripData.vehicle_id,
+          route_id: currentTripData.route_id,
+          direction: currentTripData.direction,
+          start_time: currentTripData.start_time,
+          seats_capacity: currentTripData.seats_capacity,
+          created_at: currentTripData.created_at,
+          updated_at: currentTripData.updated_at,
+          end_time: null,
+          vehicles: currentTripData.vehicles,
+          routes: currentTripData.routes
+        } as TripInfo
+      } else {
+        currentTrip.value = null
+      }
+
+      // Set upcoming trips (all trips after current one)
+      const currentTripIndex = trips.findIndex(trip => trip.id === currentTrip.value?.id)
+      upcomingTrips.value = trips.slice(currentTripIndex + 1).map(trip => ({
+        id: trip.id,
+        vehicle_id: trip.vehicle_id,
+        route_id: trip.route_id,
+        direction: trip.direction,
+        start_time: trip.start_time,
+        seats_capacity: trip.seats_capacity,
+        created_at: trip.created_at,
+        updated_at: trip.updated_at,
+        end_time: null,
+        vehicles: trip.vehicles,
+        routes: trip.routes
+      })) as TripInfo[]
     }
-
-    debugInfo.value = `Driver ID: ${driverData.id}`
-
-    // Get the bus assigned to the driver
-    const { data: busData, error: busErr } = await supabase
-      .from('vehicles')
-      .select('*')
-      .eq('driver_id', driverData.id)
-      .single()
-
-    if (busErr) throw busErr
-    if (!busData?.route) {
-      route.value = null
-      debugInfo.value += '\nNo route assigned to bus'
-      return
-    }
-
-    debugInfo.value += `\nBus Route: ${busData.route}`
-
-    // Get the route details
-    const { data: routeData, error: routeErr } = await supabase
-      .from('routes')
-      .select('*')
-      .eq('id', busData.route)
-      .single()
-
-    if (routeErr) throw routeErr
-    route.value = routeData as RouteInfo
-    debugInfo.value += '\nRoute data loaded successfully'
   } catch (err: any) {
-    console.error('Error fetching assigned route:', err)
-    error.value = 'Failed to load assigned route'
-    debugInfo.value += `\nError: ${err.message || 'Unknown error'}`
+    console.error('Error fetching trips:', err)
+    error.value = 'Failed to load trips'
   } finally {
     isLoading.value = false
   }
 }
 
+// Update passenger count
+const updatePassengerCount = (increment: boolean) => {
+  if (!currentTrip.value?.routes) return
+  
+  if (increment && passengerCount.value < currentTrip.value.seats_capacity) {
+    passengerCount.value++
+    collectedFare.value += currentTrip.value.routes.fare
+  } else if (!increment && passengerCount.value > 0) {
+    passengerCount.value--
+  }
+}
+
 onMounted(() => {
-  fetchAssignedRoute()
+  fetchTrips()
+  // watchLocation()
 })
 </script>
 
@@ -99,66 +170,120 @@ onMounted(() => {
     <UAlert
       v-else-if="error"
       color="error"
-      title="Error"
-      :description="error"
+      :title="error"
     />
 
-    <!-- Debug Info (only in development) -->
-    <UCard
-      v-if="debugInfo"
-      color="yellow"
-      class="max-w-3xl"
-    >
-      <pre class="text-sm">{{ debugInfo }}</pre>
-    </UCard>
+    <!-- Active Trip Information -->
+    <div v-else-if="currentTrip" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Map Section -->
+      <UCard class="h-[400px]">
+        <TripMap 
+          :current-location="currentLocation"
+          :destination="destinationLocation"
+        />
+      </UCard>
 
-    <!-- No Route Assigned -->
+      <!-- Current Trip Details -->
+      <UCard v-if="currentTrip.routes && currentTrip.vehicles">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium">Current Trip</h3>
+            <UBadge color="success">Active</UBadge>
+          </div>
+        </template>
+
+        <div class="space-y-6">
+          <!-- Route Information -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-sm text-gray-500">From</div>
+              <div class="font-medium">{{ currentTrip.routes.start_location }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">To</div>
+              <div class="font-medium">{{ currentTrip.routes.end_location }}</div>
+            </div>
+          </div>
+
+          <!-- Passenger and Fare Information -->
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <div class="text-sm text-gray-500">Passengers</div>
+              <div class="flex items-center space-x-2">
+                <UButton @click="updatePassengerCount(false)" icon="i-heroicons-minus" size="sm" :disabled="passengerCount === 0" />
+                <span class="font-medium">{{ passengerCount }}/{{ currentTrip.seats_capacity }}</span>
+                <UButton @click="updatePassengerCount(true)" icon="i-heroicons-plus" size="sm" :disabled="passengerCount === currentTrip.seats_capacity" />
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">Collected Fare</div>
+              <div class="font-medium">{{ collectedFare.toFixed(2) }} tokens</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">Remaining Seats</div>
+              <div class="font-medium">{{ remainingSeats }}</div>
+            </div>
+          </div>
+
+          <!-- Vehicle Information -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-sm text-gray-500">Vehicle</div>
+                <div class="font-medium">{{ currentTrip.vehicles.model }}</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-500">License Plate</div>
+                <div class="font-medium">{{ currentTrip.vehicles.license_plate }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Upcoming Trips -->
+      <UCard class="md:col-span-2">
+        <template #header>
+          <h3 class="text-lg font-medium">Upcoming Trips</h3>
+        </template>
+
+        <div v-if="upcomingTrips.length === 0" class="text-gray-500">
+          No upcoming trips scheduled
+        </div>
+        
+        <div v-else class="divide-y">
+          <template v-for="trip in upcomingTrips" :key="trip.id">
+            <div v-if="trip.routes" class="py-4">
+              <div class="grid grid-cols-4 gap-4">
+                <div>
+                  <div class="text-sm text-gray-500">Start Time</div>
+                  <div class="font-medium">{{ trip.start_time }}</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-500">From</div>
+                  <div class="font-medium">{{ trip.routes.start_location }}</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-500">To</div>
+                  <div class="font-medium">{{ trip.routes.end_location }}</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-500">Expected Duration</div>
+                  <div class="font-medium">{{ trip.routes.average_time }} min</div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </UCard>
+    </div>
+
+    <!-- No Active Trip -->
     <UAlert
-      v-else-if="!route"
-      color="info"
-      title="No Route Assigned"
-      description="You have not been assigned to any route yet."
-    />
-
-    <!-- Route Information -->
-    <UCard
       v-else
-      class="max-w-3xl"
-    >
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-medium">Assigned Route</h3>
-          <UBadge color="primary">Active</UBadge>
-        </div>
-      </template>
-
-      <div class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <div class="text-sm text-gray-500">From</div>
-            <div class="font-medium">{{ route.start_location }}</div>
-          </div>
-          <div>
-            <div class="text-sm text-gray-500">To</div>
-            <div class="font-medium">{{ route.end_location }}</div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <div class="text-sm text-gray-500">Distance</div>
-            <div class="font-medium">{{ route.distance }} km</div>
-          </div>
-          <div>
-            <div class="text-sm text-gray-500">Average Time</div>
-            <div class="font-medium">{{ route.average_time }} minutes</div>
-          </div>
-          <div>
-            <div class="text-sm text-gray-500">Fare</div>
-            <div class="font-medium">{{ route.fare }} tokens</div>
-          </div>
-        </div>
-      </div>
-    </UCard>
+      color="info"
+      title="No Active Trip"
+      description="You currently have no active trips assigned."
+    />
   </div>
 </template> 
