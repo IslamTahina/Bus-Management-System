@@ -84,8 +84,7 @@
 
             <div v-else-if="currentView === 'wallet'">
               <div class="max-w-3xl mx-auto">
-                <WalletCard v-if="userRole === 'passenger'" />
-                <DriverWalletCard v-else-if="userRole === 'driver'" />
+                <WalletCard :show-purchase="userRole === 'passenger'" />
               </div>
             </div>
 
@@ -114,7 +113,6 @@ import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
 import { useRouter, useRoute } from 'vue-router'
 import WalletCard from '../components/WalletCard.vue'
-import DriverWalletCard from '../components/DriverWalletCard.vue'
 import UserHistory from '../components/UserHistory.vue'
 import AdminDashboard from '../components/AdminDashboard.vue'
 

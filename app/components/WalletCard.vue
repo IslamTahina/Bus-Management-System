@@ -11,6 +11,10 @@ const error = ref<string | null>(null)
 const showPurchaseModal = ref(false)
 const purchaseAmount = ref<string>('')
 
+const props = defineProps<{
+  showPurchase?: boolean
+}>()
+
 // Fetch token balance and setup real-time subscription
 const setupBalanceSubscription = async () => {
   if (!user.value) return
@@ -115,6 +119,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-medium">My Wallet</h3>
           <UButton
+            v-if="showPurchase"
             color="primary"
             variant="soft"
             icon="i-lucide-plus"
@@ -145,7 +150,7 @@ onMounted(() => {
     </UCard>
 
     <!-- Purchase Modal -->
-    <UCard v-if="showPurchaseModal">
+    <UCard v-if="showPurchase && showPurchaseModal">
       <template #header>
         <h3 class="text-lg font-medium">Purchase Tokens</h3>
       </template>
