@@ -20,7 +20,7 @@ const setupBalanceSubscription = async () => {
     const { data: userData, error: userErr } = await supabase
       .from('users')
       .select('balance')
-      .eq('user_id', user.value.id)
+      .eq('id', user.value.id)
       .single()
 
     if (userErr) throw userErr
@@ -40,7 +40,7 @@ const setupBalanceSubscription = async () => {
           event: '*',
           schema: 'public',
           table: 'users',
-          filter: `user_id=eq.${user.value.id}`
+          filter: `id=eq.${user.value.id}`
         },
         (payload) => {
           if (payload.new && 'balance' in payload.new) {
@@ -79,7 +79,7 @@ const purchaseTokens = async () => {
       .update({ 
         balance: tokenBalance.value + amount 
       })
-      .eq('user_id', user.value.id)
+      .eq('id', user.value.id)
 
     if (updateErr) throw updateErr
 

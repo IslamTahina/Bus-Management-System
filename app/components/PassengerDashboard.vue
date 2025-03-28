@@ -160,7 +160,7 @@ const fetchUserDetails = async () => {
     const { data, error: err } = await supabase
       .from('users')
       .select('id, balance')
-      .eq('user_id', user.value.id)
+      .eq('id', user.value.id)
       .single()
 
     if (err) throw err
