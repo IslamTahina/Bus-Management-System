@@ -27,8 +27,8 @@
           ></video>
           <canvas ref="canvasRef" class="hidden"></canvas>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <div class="w-64 h-64 border-2 border-white rounded-lg shadow-lg"></div>
-            <p class="mt-4 text-center text-white">Position the QR code within the frame</p>
+            <div class="w-64 h-64 border-2 border-white rounded-lg"></div>
+            <p class="mt-4 text-center">Position the QR code within the frame</p>
           </div>
         </div>
 
@@ -56,7 +56,7 @@
               </div>
               <div>
                 <p class="text-sm text-muted">Fare</p>
-                <p class="font-medium">${{ currentTrip.fare }}</p>
+                <p class="font-medium">{{ currentTrip.fare }}</p>
               </div>
             </div>
           </UCard>

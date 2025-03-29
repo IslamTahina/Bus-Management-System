@@ -192,7 +192,7 @@ onMounted(() => {
             <div class="grid grid-cols-3 gap-4">
               <div>
                 <div class="text-sm text-muted">Passengers</div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center gap-2">
                   <UButton 
                     @click="updatePassengerCount(false)" 
                     icon="i-heroicons-minus" 
