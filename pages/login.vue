@@ -86,8 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, useRouter, useSupabaseClient } from "#imports";
-import type { Database } from "../../types/supabase";
+import type { Database } from "@/types/supabase";
 
 interface FormState {
   email: string;
@@ -95,7 +94,6 @@ interface FormState {
   rememberMe: boolean;
 }
 
-const router = useRouter();
 const supabase = useSupabaseClient<Database>();
 const isLoading = ref(false);
 const errorMessage = ref("");
@@ -124,7 +122,7 @@ const login = async () => {
     }
 
     // Successful login
-    await router.push("/");
+    await useRouter().push("/");
   } catch (error) {
     console.error("Unexpected error:", error);
     errorMessage.value = "An unexpected error occurred";

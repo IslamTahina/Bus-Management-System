@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
-import type { Database } from '../../types/supabase'
+import type { Database } from '@/types/supabase'
 
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()

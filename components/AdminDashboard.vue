@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useSupabaseClient } from '#imports'
-import type { Database } from '../../types/supabase'
+import type { Database } from '@/types/supabase'
 
 const supabase = useSupabaseClient<Database>()
 const isLoading = ref(false)

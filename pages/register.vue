@@ -113,7 +113,7 @@
 <script setup lang="ts">
 import { ref, reactive } from "#imports";
 import { useSupabaseClient } from "#imports";
-import type { Database } from "../../types/supabase";
+import type { Database } from "@/types/supabase";
 
 interface FormState {
   name: string;
@@ -122,11 +122,7 @@ interface FormState {
   confirmPassword: string;
 }
 
-definePageMeta({
-  layout: "auth",
-});
 
-const router = useRouter();
 const supabase = useSupabaseClient<Database>();
 const isLoading = ref(false);
 const errorMessage = ref("");
@@ -186,7 +182,7 @@ const register = async () => {
       }
     }
 
-    await router.push("/");
+    await useRouter().push("/");
   } catch (error) {
     console.error("Registration error:", error);
     errorMessage.value = "An unexpected error occurred";

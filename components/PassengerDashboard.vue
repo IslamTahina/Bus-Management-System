@@ -149,7 +149,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useSupabaseClient, useSupabaseUser } from "#imports";
-import type { Database } from "../../types/supabase";
+import type { Database } from "@/types/supabase";
 import QRCode from "qrcode";
 
 type Route = Database["public"]["Tables"]["routes"]["Row"];

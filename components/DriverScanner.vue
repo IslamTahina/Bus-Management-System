@@ -28,7 +28,7 @@
           <canvas ref="canvasRef" class="hidden"></canvas>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <div class="w-64 h-64 border-2 border-white rounded-lg"></div>
-            <p class="mt-4 text-center">Position the QR code within the frame</p>
+            <p class="mt-4">Position the QR code within the frame</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ const currentTrip = ref<any>(null)
 const stream = ref<MediaStream | null>(null)
 const scanningInterval = ref<number | null>(null)
 
-// Mock current trip data - replace with actual data from your backend
+// Mock current trip data 
 const mockCurrentTrip = {
   route: 'Downtown Express',
   fare: 2.50
@@ -157,14 +157,9 @@ const startScanning = () => {
 const onDecode = async (decodedString: string) => {
   scanResult.value = decodedString
   try {
-    // Here you would:
-    // 1. Parse the QR code data (passenger ID, etc.)
-    // 2. Send to backend to process payment
-    // 3. Update trip status
     await processPayment(decodedString)
   } catch (error) {
     console.error('Error processing payment:', error)
-    // Handle error appropriately
   }
 }
 

@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import { useSupabaseClient } from '#imports'
+import { useSupabaseClient } from "#imports";
 
 interface Route {
-  id: string
-  start_location: string
-  end_location: string
-  distance: number
-  average_time: number | null
-  fare: number
-  created_at?: string
-  updated_at?: string
+  id: string;
+  start_location: string;
+  end_location: string;
+  distance: number;
+  average_time: number | null;
+  fare: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
-const routes = ref<Route[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
+const routes = ref<Route[]>([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
 
-const supabase = useSupabaseClient()
+const supabase = useSupabaseClient();
 
 async function fetchRoutes() {
   try {
     const { data, error: err } = await supabase
-      .from('routes')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .from("routes")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    if (err) throw err
+    if (err) throw err;
 
-    routes.value = data
+    routes.value = data;
   } catch (err) {
-    error.value = 'Failed to load routes'
-    console.error('Error:', err)
+    error.value = "Failed to load routes";
+    console.error("Error:", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 onMounted(() => {
-  fetchRoutes()
-})
+  fetchRoutes();
+});
 </script>
 
 <template>
@@ -48,9 +48,7 @@ onMounted(() => {
       <p class="subtitle">Choose your destination from our available routes</p>
     </div>
 
-    <div v-if="loading" class="loading">
-      Loading routes...
-    </div>
+    <div v-if="loading" class="loading">Loading routes...</div>
 
     <div v-else-if="error" class="error">
       {{ error }}
@@ -61,11 +59,7 @@ onMounted(() => {
     </div>
 
     <div v-else class="routes-grid">
-      <RouteCard
-        v-for="route in routes"
-        :key="route.id"
-        :route="route"
-      />
+      <RouteCard v-for="route in routes" :key="route.id" :route="route" />
     </div>
   </div>
 </template>
@@ -122,4 +116,4 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 }
-</style> 
+</style>

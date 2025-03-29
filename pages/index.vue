@@ -38,7 +38,7 @@
 
       <div class="flex pt-14">
         <!-- Side Navigation -->
-        <USidebar
+        <USlideover
           v-model="isSidebarOpen"
           :class="{
             'fixed inset-y-0 left-0 z-50 w-64 top-14': true,
@@ -67,7 +67,7 @@
               {{ link.label }}
             </UButton>
           </div>
-        </USidebar>
+        </USlideover>
 
         <!-- Main Content -->
         <main 
@@ -107,11 +107,9 @@
 </template>
 
 <script setup lang="ts">
-import type { Database } from '../../types/supabase'
+import type { Database } from '@/types/supabase'
 
 
-const router = useRouter()
-const route = useRoute()
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 
@@ -193,7 +191,7 @@ const setCurrentView = (view: string) => {
 const signOut = async () => {
   try {
     await supabase.auth.signOut()
-    router.push('/login')
+    useRouter().push('/login')
   } catch (err) {
     console.error('Error signing out:', err)
     error.value = 'Failed to sign out'

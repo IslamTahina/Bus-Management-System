@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database } from '../../types/supabase'
+import type { Database } from '@/types/supabase'
 import TripMap from './TripMap.vue'
 
 const supabase = useSupabaseClient<Database>()
