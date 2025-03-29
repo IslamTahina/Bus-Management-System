@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
 import TripMap from './TripMap.vue'
 
@@ -165,25 +163,35 @@ onMounted(() => {
           <template #header>
             <div class="flex items-center justify-between">
               <h3 class="text-lg font-medium">Current Trip</h3>
-              <UBadge color="success">Active</UBadge>
+              <div class="flex items-center gap-2">
+                <UButton
+                  to="/driver/scanner"
+                  color="primary"
+                  variant="ghost"
+                  icon="i-heroicons-qr-code"
+                >
+                  Scan QR
+                </UButton>
+                <UBadge color="success">Active</UBadge>
+              </div>
             </div>
           </template>
 
           <div class="space-y-6">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <div class="text-sm text-gray-500">From</div>
+                <div class="text-sm text-muted">From</div>
                 <div class="font-medium">{{ currentTrip.routes.start_location }}</div>
               </div>
               <div>
-                <div class="text-sm text-gray-500">To</div>
+                <div class="text-sm text-muted">To</div>
                 <div class="font-medium">{{ currentTrip.routes.end_location }}</div>
               </div>
             </div>
 
             <div class="grid grid-cols-3 gap-4">
               <div>
-                <div class="text-sm text-gray-500">Passengers</div>
+                <div class="text-sm text-muted">Passengers</div>
                 <div class="flex items-center space-x-2">
                   <UButton 
                     @click="updatePassengerCount(false)" 
@@ -201,11 +209,11 @@ onMounted(() => {
                 </div>
               </div>
               <div>
-                <div class="text-sm text-gray-500">Collected Fare</div>
+                <div class="text-sm text-muted">Collected Fare</div>
                 <div class="font-medium">{{ collectedFare.toFixed(2) }} tokens</div>
               </div>
               <div>
-                <div class="text-sm text-gray-500">Remaining Seats</div>
+                <div class="text-sm text-muted">Remaining Seats</div>
                 <div class="font-medium">{{ remainingSeats }}</div>
               </div>
             </div>
@@ -213,11 +221,11 @@ onMounted(() => {
             <UCard>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <div class="text-sm text-gray-500">Vehicle</div>
+                  <div class="text-sm text-muted">Vehicle</div>
                   <div class="font-medium">{{ currentTrip.vehicles.model }}</div>
                 </div>
                 <div>
-                  <div class="text-sm text-gray-500">License Plate</div>
+                  <div class="text-sm text-muted">License Plate</div>
                   <div class="font-medium">{{ currentTrip.vehicles.license_plate }}</div>
                 </div>
               </div>
@@ -230,7 +238,7 @@ onMounted(() => {
             <h3 class="text-lg font-medium">Upcoming Trips</h3>
           </template>
 
-          <div v-if="upcomingTrips.length === 0" class="text-gray-500">
+          <div v-if="upcomingTrips.length === 0" class="text-muted">
             No upcoming trips scheduled
           </div>
           
@@ -239,19 +247,19 @@ onMounted(() => {
               <div v-if="trip.routes" class="py-4">
                 <div class="grid grid-cols-4 gap-4">
                   <div>
-                    <div class="text-sm text-gray-500">Start Time</div>
+                    <div class="text-sm text-muted">Start Time</div>
                     <div class="font-medium">{{ trip.start_time }}</div>
                   </div>
                   <div>
-                    <div class="text-sm text-gray-500">From</div>
+                    <div class="text-sm text-muted">From</div>
                     <div class="font-medium">{{ trip.routes.start_location }}</div>
                   </div>
                   <div>
-                    <div class="text-sm text-gray-500">To</div>
+                    <div class="text-sm text-muted">To</div>
                     <div class="font-medium">{{ trip.routes.end_location }}</div>
                   </div>
                   <div>
-                    <div class="text-sm text-gray-500">Expected Duration</div>
+                    <div class="text-sm text-muted">Expected Duration</div>
                     <div class="font-medium">{{ trip.routes.average_time }} min</div>
                   </div>
                 </div>
