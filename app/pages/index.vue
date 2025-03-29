@@ -96,8 +96,7 @@
 
             <div v-else-if="currentView === 'profile'">
               <div class="max-w-3xl mx-auto">
-                <h2 class="text-2xl font-semibold mb-4">Profile</h2>
-                <p>Profile settings coming soon...</p>
+                <PassengerProfile />
               </div>
             </div>
           </div>
@@ -108,13 +107,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import { useSupabaseClient, useSupabaseUser } from '#imports'
 import type { Database } from '../../types/supabase'
-import { useRouter, useRoute } from 'vue-router'
-import WalletCard from '../components/WalletCard.vue'
-import UserHistory from '../components/UserHistory.vue'
-import AdminDashboard from '../components/AdminDashboard.vue'
+
 
 const router = useRouter()
 const route = useRoute()

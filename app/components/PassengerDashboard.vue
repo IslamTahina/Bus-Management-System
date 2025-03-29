@@ -81,38 +81,68 @@
 
               <div class="grid grid-cols-2 gap-6">
                 <div>
-                  <div class="text-sm text-gray-400">Distance</div>
+                  <div class="text-sm">Distance</div>
                   <div class="text-lg">{{ route.distance }} km</div>
                 </div>
                 <div>
-                  <div class="text-sm text-gray-400">Duration</div>
+                  <div class="text-sm">Duration</div>
                   <div class="text-lg">{{ route.average_time }} minutes</div>
                 </div>
               </div>
 
               <div>
-                <div class="text-sm text-gray-400">Fare</div>
+                <div class="text-sm">Fare</div>
                 <div class="text-lg">{{ route.fare }} tokens</div>
               </div>
 
-              <UButton 
-                color="primary" 
-                block 
+              <UButton
+                color="primary"
+                block
                 :disabled="userDetails?.balance < route.fare"
                 @click="bookRoute"
               >
                 <span v-if="userDetails?.balance >= route.fare">
                   Book This Route
                 </span>
-                <span v-else>
-                  Insufficient Balance
-                </span>
+                <span v-else> Insufficient Balance </span>
               </UButton>
             </div>
           </UCard>
         </template>
       </div>
     </div>
+
+    <!-- QR Code Modal -->
+    <UModal v-model:open="showQRModal">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium">Your Booking QR Code</h3>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-x"
+                size="sm"
+                @click="showQRModal = false"
+              />
+            </div>
+          </template>
+
+          <div class="flex flex-col items-center gap-4 py-4">
+            <img
+              v-if="bookingQR"
+              :src="bookingQR"
+              alt="Booking QR Code"
+              class="w-64 h-64"
+            />
+            <p class="text-sm text-center">
+              Show this QR code to the driver when boarding the bus
+            </p>
+          </div>
+        </UCard>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -155,21 +185,21 @@ const fetchRoutes = async () => {
 // Fetch user details including balance
 const fetchUserDetails = async () => {
   if (!user.value) return null;
-  
+
   try {
     const { data, error: err } = await supabase
-      .from('users')
-      .select('id, balance')
-      .eq('id', user.value.id)
-      .single()
+      .from("users")
+      .select("id, balance")
+      .eq("id", user.value.id)
+      .single();
 
-    if (err) throw err
-    userDetails.value = data
+    if (err) throw err;
+    userDetails.value = data;
   } catch (err) {
-    console.error('Error fetching user details:', err)
-    error.value = 'Failed to load user details'
+    console.error("Error fetching user details:", err);
+    error.value = "Failed to load user details";
   }
-}
+};
 
 // Select a route
 const selectRoute = (route: Route) => {
@@ -185,69 +215,26 @@ const bookRoute = async () => {
 
     // Check if user has sufficient balance
     if (userDetails.value.balance < selectedRoute.value.fare) {
-      error.value = 'Insufficient token balance';
+      error.value = "Insufficient token balance";
       return;
     }
-    console.log("Trying to book with tokens:", selectedRoute.value.fare);
-
-    // Start a transaction
-    const { data: booking, error: bookingError } = await supabase
-      .from('bookings')
-      .insert({
-        booking_time: new Date().toISOString(),
-        route_id: selectedRoute.value.id,
-        customer_id: userDetails.value.id,
-        payment_status: 'pending',
-        tokens_used: selectedRoute.value.fare,
-      })
-      .select()
-      .single()
-
-    if (bookingError) throw bookingError
-
-    // Create a transaction record for token deduction
-    const { error: txError } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: userDetails.value.id,
-        tokens: -selectedRoute.value.fare,
-        transaction_type: 'debit',
-        transaction_time: new Date().toISOString(),
-      })
-
-    if (txError) throw txError
-
-    // Update user's balance
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        balance: userDetails.value.balance - selectedRoute.value.fare,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userDetails.value.id)
-
-    if (updateError) throw updateError
-
-    // Update local user details
-    userDetails.value.balance -= selectedRoute.value.fare
 
     // Generate QR code with booking information
     const qrData = JSON.stringify({
-      booking_id: booking.id,
       route_id: selectedRoute.value.id,
       customer_id: userDetails.value.id,
       tokens: selectedRoute.value.fare,
       timestamp: new Date().toISOString(),
-    })
+    });
 
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData)
-    bookingQR.value = qrCodeDataUrl
-    showQRModal.value = true
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+    bookingQR.value = qrCodeDataUrl;
+    showQRModal.value = true;
   } catch (err) {
-    console.error('Error booking route:', err)
-    error.value = 'Failed to book route'
+    console.error("Error generating QR code:", err);
+    error.value = "Failed to generate QR code";
   }
-}
+};
 
 onMounted(() => {
   fetchRoutes();
