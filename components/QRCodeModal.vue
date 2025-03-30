@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import QRCodeVue3 from "qrcode-vue3";
 const qrValue = computed(() => {
-  return JSON.stringify(useSupabaseUser().value?.id);
+  return useSupabaseUser().value?.id;
 });
 
 defineEmits(["close"]);
