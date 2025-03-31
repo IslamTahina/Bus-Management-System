@@ -23,16 +23,30 @@
       <!-- Profile Information -->
       <UCard>
         <template #header>
-          <h3 class="text-lg font-medium">Profile Information</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium">Profile Information</h3>
+            <UButton
+              v-if="!isEditing"
+              color="primary"
+              variant="ghost"
+              icon="i-lucide-edit"
+              @click="startEditing"
+            >
+              Edit Profile
+            </UButton>
+          </div>
         </template>
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Name</label>
-            <UInput
-              v-model="form.name"
-              placeholder="Enter your name"
-              class="mt-1"
-            />
+            <div v-if="isEditing">
+              <UInput
+                v-model="form.name"
+                placeholder="Enter your name"
+                class="mt-1"
+              />
+            </div>
+            <p v-else class="mt-1 text-gray-500">{{ user?.name || 'Not set' }}</p>
           </div>
 
           <div>
@@ -60,8 +74,15 @@
           </div>
         </div>
 
-        <template #footer>
-          <div class="flex justify-end">
+        <template #footer v-if="isEditing">
+          <div class="flex justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="cancelEditing"
+            >
+              Cancel
+            </UButton>
             <UButton
               color="primary"
               :loading="isUpdating"
@@ -122,48 +143,6 @@
         </div>
         <div v-else class="text-center py-4 text-gray-500">
           No vehicle information added
-        </div>
-      </UCard>
-
-      <!-- Recent Trips -->
-      <UCard v-if="!isAdmin">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium">Recent Trips</h3>
-            <UButton
-              color="primary"
-              variant="ghost"
-              icon="i-lucide-refresh-cw"
-              :loading="isLoadingTrips"
-              @click="fetchTrips"
-            >
-              Refresh
-            </UButton>
-          </div>
-        </template>
-        
-        <div v-if="trips.length" class="space-y-4">
-          <div
-            v-for="trip in trips"
-            :key="trip.id"
-            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-          >
-            <div>
-              <p class="font-medium">Trip #{{ trip.id }}</p>
-              <p class="text-sm text-gray-500">{{ formatDate(trip.created_at) }}</p>
-            </div>
-            <div class="text-right">
-              <p class="font-medium">{{ formatCurrency(trip.amount ?? 0) }}</p>
-              <UBadge
-                :color="trip.status === 'completed' ? 'success' : 'warning'"
-              >
-                {{ trip.status ?? 'pending' }}
-              </UBadge>
-            </div>
-          </div>
-        </div>
-        <div v-else class="text-center py-4 text-gray-500">
-          No trips found
         </div>
       </UCard>
 
@@ -354,10 +333,6 @@ const authUser = useSupabaseUser()
 const router = useRouter()
 
 const user = ref<Database['public']['Tables']['users']['Row'] | null>(null)
-type Trip = Database['public']['Tables']['trips']['Row'] & {
-  amount?: number
-  status?: string
-}
 
 type Vehicle = {
   id: string
@@ -370,16 +345,15 @@ type Vehicle = {
   updated_at: string | null
 }
 
-const trips = ref<Trip[]>([])
 const vehicle = ref<Vehicle | null>(null)
 const isLoading = ref(false)
-const isLoadingTrips = ref(false)
 const isUpdating = ref(false)
 const isUpdatingVehicle = ref(false)
 const isChangingPassword = ref(false)
 const isDeleting = ref(false)
 const showVehicleModal = ref(false)
 const showPasswordForm = ref(false)
+const isEditing = ref(false)
 
 const form = reactive({
   name: ''
@@ -502,28 +476,6 @@ const fetchVehicle = async () => {
   }
 }
 
-// Fetch user trips
-const fetchTrips = async () => {
-  if (isAdmin.value || !authUser.value?.id) return
-
-  try {
-    isLoadingTrips.value = true
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .eq(isDriver.value ? 'driver_id' : 'passenger_id', authUser.value.id)
-      .order('created_at', { ascending: false })
-      .limit(5)
-
-    if (error) throw error
-    trips.value = data || []
-  } catch (error) {
-    console.error('Error fetching trips:', error)
-  } finally {
-    isLoadingTrips.value = false
-  }
-}
-
 // Update profile
 const updateProfile = async () => {
   if (!authUser.value?.id) return
@@ -544,6 +496,9 @@ const updateProfile = async () => {
     if (user.value) {
       user.value.name = form.name
     }
+
+    // Exit edit mode
+    isEditing.value = false
 
     useToast().add({
       title: 'Success',
@@ -715,14 +670,21 @@ const deleteAccount = async () => {
   }
 }
 
+const startEditing = () => {
+  form.name = user.value?.name || ''
+  isEditing.value = true
+}
+
+const cancelEditing = () => {
+  form.name = user.value?.name || ''
+  isEditing.value = false
+}
+
 // Initialize
 onMounted(() => {
   fetchProfile()
   if (isDriver.value) {
     fetchVehicle()
-  }
-  if (!isAdmin.value) {
-    fetchTrips()
   }
 })
 </script> 
