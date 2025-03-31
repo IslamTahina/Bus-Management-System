@@ -170,9 +170,21 @@
       <!-- Change Password -->
       <UCard>
         <template #header>
-          <h3 class="text-lg font-medium">Change Password</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium">Security</h3>
+            <UButton
+              v-if="!showPasswordForm"
+              color="primary"
+              variant="ghost"
+              icon="i-lucide-key"
+              @click="showPasswordForm = true"
+            >
+              Change Password
+            </UButton>
+          </div>
         </template>
-        <div class="space-y-4">
+        
+        <div v-if="showPasswordForm" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Current Password</label>
             <UInput
@@ -204,8 +216,15 @@
           </div>
         </div>
 
-        <template #footer>
-          <div class="flex justify-end">
+        <template #footer v-if="showPasswordForm">
+          <div class="flex justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="cancelPasswordChange"
+            >
+              Cancel
+            </UButton>
             <UButton
               color="primary"
               :loading="isChangingPassword"
@@ -368,6 +387,7 @@ const isChangingPassword = ref(false)
 const isDeleting = ref(false)
 const showDeleteModal = ref(false)
 const showVehicleModal = ref(false)
+const showPasswordForm = ref(false)
 
 const form = reactive({
   name: ''
@@ -616,6 +636,13 @@ const saveVehicle = async () => {
 }
 
 // Change password
+const cancelPasswordChange = () => {
+  showPasswordForm.value = false
+  passwordForm.currentPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+}
+
 const changePassword = async () => {
   if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
     useToast().add({
@@ -643,10 +670,8 @@ const changePassword = async () => {
 
     if (error) throw error
 
-    // Clear password form
-    passwordForm.currentPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
+    // Clear password form and hide it
+    cancelPasswordChange()
 
     useToast().add({
       title: 'Success',
