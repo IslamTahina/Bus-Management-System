@@ -241,16 +241,39 @@
         <template #header>
           <h3 class="text-lg font-medium text-red-500">Danger Zone</h3>
         </template>
-        <p class="text-sm text-gray-500 mb-4">
-          Once you delete your account, there is no going back. Please be certain.
-        </p>
-        <UButton
-          color="error"
-          variant="soft"
-          @click="confirmDeleteAccount"
-        >
-          Delete Account
-        </UButton>
+        
+        <UPopover :popper-class="{ 'min-w-[300px]': true }">
+          <UButton
+            color="error"
+            variant="soft"
+          >
+            Delete Account
+          </UButton>
+
+          <template #panel="{ close }">
+            <div class="p-4 space-y-4">
+              <p class="text-sm text-gray-500">
+                Are you sure you want to delete your account? This action cannot be undone.
+              </p>
+              <div class="flex justify-end gap-2">
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  @click="close"
+                >
+                  Cancel
+                </UButton>
+                <UButton
+                  color="error"
+                  :loading="isDeleting"
+                  @click="deleteAccount"
+                >
+                  Delete Account
+                </UButton>
+              </div>
+            </div>
+          </template>
+        </UPopover>
       </UCard>
     </div>
 
@@ -315,36 +338,6 @@
         </template>
       </UCard>
     </UModal>
-
-    <!-- Delete Account Modal -->
-    <UModal v-model="showDeleteModal">
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-medium">Delete Account</h3>
-        </template>
-        <p class="text-gray-500">
-          Are you sure you want to delete your account? This action cannot be undone.
-        </p>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              @click="showDeleteModal = false"
-            >
-              Cancel
-            </UButton>
-            <UButton
-              color="error"
-              :loading="isDeleting"
-              @click="deleteAccount"
-            >
-              Delete Account
-            </UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
   </div>
 </template>
 
@@ -385,7 +378,6 @@ const isUpdating = ref(false)
 const isUpdatingVehicle = ref(false)
 const isChangingPassword = ref(false)
 const isDeleting = ref(false)
-const showDeleteModal = ref(false)
 const showVehicleModal = ref(false)
 const showPasswordForm = ref(false)
 
@@ -691,10 +683,6 @@ const changePassword = async () => {
 }
 
 // Delete account
-const confirmDeleteAccount = () => {
-  showDeleteModal.value = true
-}
-
 const deleteAccount = async () => {
   if (!authUser.value?.id) return
 
@@ -724,7 +712,6 @@ const deleteAccount = async () => {
     })
   } finally {
     isDeleting.value = false
-    showDeleteModal.value = false
   }
 }
 
