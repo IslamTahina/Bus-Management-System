@@ -16,7 +16,7 @@
 
     <!-- Not Authenticated -->
     <div v-else-if="!user" class="min-h-screen flex flex-col items-center justify-center space-y-4">
-      <h1 class="text-2xl font-semibold">Welcome to Bus Booking System</h1>
+      <h1 class="text-2xl font-semibold">Welcome to Bus Management System</h1>
       <p>Please sign in to continue</p>
       <div class="space-x-4">
         <UButton to="/login">Sign In</UButton>
@@ -61,7 +61,7 @@
               :icon="link.icon"
               variant="ghost"
               class="w-full justify-start"
-              :class="{ 'bg-gray-100 dark:bg-gray-800': currentView === link.view }"
+              :class="{ 'bg-gray-100 dark:bg-gray-800': useRoute().path.includes(link.view) }"
               @click="link.click"
             >
               {{ link.label }}
@@ -75,30 +75,7 @@
           :class="{ 'pl-64': isSidebarOpen }"
         >
           <div class="p-4">
-            <!-- Content based on current route -->
-            <div v-if="currentView === 'dashboard'">
-              <PassengerDashboard v-if="userRole === 'passenger'" />
-              <DriverDashboard v-else-if="userRole === 'driver'" />
-              <AdminDashboard v-else-if="userRole === 'admin'" />
-            </div>
-
-            <div v-else-if="currentView === 'wallet'">
-              <div class="max-w-3xl mx-auto">
-                <WalletCard :show-purchase="userRole === 'passenger'" />
-              </div>
-            </div>
-
-            <div v-else-if="currentView === 'history'">
-              <div class="max-w-3xl mx-auto">
-                <UserHistory />
-              </div>
-            </div>
-
-            <div v-else-if="currentView === 'profile'">
-              <div class="max-w-3xl mx-auto">
-                <PassengerProfile />
-              </div>
-            </div>
+            <NuxtPage />
           </div>
         </main>
       </div>
@@ -109,14 +86,12 @@
 <script setup lang="ts">
 import type { Database } from '@/types/supabase'
 
-
 const supabase = useSupabaseClient<Database>()
 const user = useSupabaseUser()
 
 const isLoading = ref(true)
 const error = ref('')
 const userRole = ref<'passenger' | 'driver' | 'admin' | null>(null)
-const currentView = ref('dashboard')
 const isSidebarOpen = ref(false)
 
 // Navigation links based on user role
@@ -126,7 +101,15 @@ const navigationLinks = computed(() => {
       label: 'Dashboard',
       icon: 'i-lucide-layout-dashboard',
       view: 'dashboard',
-      click: () => setCurrentView('dashboard')
+      click: () => {
+        if (userRole.value === 'passenger') {
+          useRouter().push('/passenger/dashboard')
+        } else if (userRole.value === 'driver') {
+          useRouter().push('/driver/dashboard')
+        } else if (userRole.value === 'admin') {
+          useRouter().push('/admin/dashboard')
+        }
+      }
     }
   ]
 
@@ -137,13 +120,13 @@ const navigationLinks = computed(() => {
         label: 'Manage Users',
         icon: 'i-lucide-users',
         view: 'users',
-        click: () => setCurrentView('users')
+        click: () => useRouter().push('/admin/users')
       },
       {
         label: 'System Settings',
         icon: 'i-lucide-settings',
         view: 'settings',
-        click: () => setCurrentView('settings')
+        click: () => useRouter().push('/admin/settings')
       }
     )
   } else {
@@ -152,13 +135,13 @@ const navigationLinks = computed(() => {
         label: 'Wallet',
         icon: 'i-lucide-wallet',
         view: 'wallet',
-        click: () => setCurrentView('wallet')
+        click: () => useRouter().push('/passenger/wallet')
       },
       {
         label: 'History',
         icon: 'i-lucide-history',
         view: 'history',
-        click: () => setCurrentView('history')
+        click: () => useRouter().push('/passenger/history')
       }
     )
   }
@@ -169,7 +152,7 @@ const navigationLinks = computed(() => {
       label: 'Profile',
       icon: 'i-lucide-user',
       view: 'profile',
-      click: () => setCurrentView('profile')
+      click: () => useRouter().push('/passenger/profile')
     },
     {
       label: 'Sign Out',
@@ -181,11 +164,6 @@ const navigationLinks = computed(() => {
 
   return baseLinks
 })
-
-// Set current view
-const setCurrentView = (view: string) => {
-  currentView.value = view
-}
 
 // Sign out function
 const signOut = async () => {
@@ -225,6 +203,17 @@ watch(user, (newUser) => {
     fetchUserRole()
   } else {
     userRole.value = null
+  }
+}, { immediate: true })
+
+// Navigation guard to redirect based on role
+watch(userRole, (newRole) => {
+  if (newRole === 'passenger') {
+    useRouter().push('/passenger/dashboard')
+  } else if (newRole === 'driver') {
+    useRouter().push('/driver/dashboard')
+  } else if (newRole === 'admin') {
+    useRouter().push('/admin/dashboard')
   }
 }, { immediate: true })
 </script>
