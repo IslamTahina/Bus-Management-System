@@ -171,6 +171,12 @@ const navigationLinks = [
     click: () => navigateTo('dashboard')
   },
   {
+    label: 'Wallet',
+    icon: 'i-lucide-wallet',
+    view: 'wallet',
+    click: () => navigateTo('wallet')
+  },
+  {
     label: 'Profile',
     icon: 'i-lucide-user',
     view: 'profile',
