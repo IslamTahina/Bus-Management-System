@@ -100,18 +100,27 @@
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-medium">Vehicle Information</h3>
             <UButton
-              v-if="!vehicle"
+              v-if="!vehicle && !isEditingVehicle"
               color="primary"
               variant="ghost"
               icon="i-lucide-plus"
-              @click="showVehicleModal = true"
+              @click="startEditingVehicle"
             >
               Add Vehicle
+            </UButton>
+            <UButton
+              v-if="vehicle && !isEditingVehicle"
+              color="primary"
+              variant="ghost"
+              icon="i-lucide-edit"
+              @click="startEditingVehicle"
+            >
+              Edit Vehicle
             </UButton>
           </div>
         </template>
         
-        <div v-if="vehicle" class="space-y-4">
+        <div v-if="!isEditingVehicle && vehicle" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Vehicle Number</label>
@@ -130,20 +139,66 @@
               <p class="mt-1">{{ vehicle.capacity }} seats</p>
             </div>
           </div>
-          <div class="flex justify-end">
-            <UButton
-              color="primary"
-              variant="ghost"
-              icon="i-lucide-edit"
-              @click="editVehicle"
-            >
-              Edit Vehicle
-            </UButton>
+        </div>
+
+        <div v-if="isEditingVehicle" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Vehicle Number</label>
+            <UInput
+              v-model="vehicleForm.number"
+              placeholder="Enter vehicle number"
+              class="mt-1"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">License Plate</label>
+            <UInput
+              v-model="vehicleForm.license_plate"
+              placeholder="Enter license plate"
+              class="mt-1"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Model</label>
+            <UInput
+              v-model="vehicleForm.model"
+              placeholder="Enter vehicle model"
+              class="mt-1"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Capacity</label>
+            <UInput
+              v-model="vehicleForm.capacity"
+              type="number"
+              placeholder="Enter seating capacity"
+              class="mt-1"
+            />
           </div>
         </div>
-        <div v-else class="text-center py-4 text-gray-500">
+
+        <div v-if="!vehicle && !isEditingVehicle" class="text-center py-4 text-gray-500">
           No vehicle information added
         </div>
+
+        <template #footer v-if="isEditingVehicle">
+          <div class="flex justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="cancelEditingVehicle"
+            >
+              Cancel
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="isUpdatingVehicle"
+              @click="saveVehicle"
+            >
+              {{ vehicle ? 'Update' : 'Add' }} Vehicle
+            </UButton>
+          </div>
+        </template>
       </UCard>
 
       <!-- Change Password -->
@@ -255,68 +310,6 @@
         </UPopover>
       </UCard>
     </div>
-
-    <!-- Vehicle Modal (Driver Only) -->
-    <UModal v-if="isDriver" v-model="showVehicleModal">
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-medium">{{ vehicle ? 'Edit' : 'Add' }} Vehicle</h3>
-        </template>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Vehicle Number</label>
-            <UInput
-              v-model="vehicleForm.number"
-              placeholder="Enter vehicle number"
-              class="mt-1"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">License Plate</label>
-            <UInput
-              v-model="vehicleForm.license_plate"
-              placeholder="Enter license plate"
-              class="mt-1"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Model</label>
-            <UInput
-              v-model="vehicleForm.model"
-              placeholder="Enter vehicle model"
-              class="mt-1"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Capacity</label>
-            <UInput
-              v-model="vehicleForm.capacity"
-              type="number"
-              placeholder="Enter seating capacity"
-              class="mt-1"
-            />
-          </div>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              @click="showVehicleModal = false"
-            >
-              Cancel
-            </UButton>
-            <UButton
-              color="primary"
-              :loading="isUpdatingVehicle"
-              @click="saveVehicle"
-            >
-              {{ vehicle ? 'Update' : 'Add' }} Vehicle
-            </UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
   </div>
 </template>
 
@@ -354,6 +347,7 @@ const isDeleting = ref(false)
 const showVehicleModal = ref(false)
 const showPasswordForm = ref(false)
 const isEditing = ref(false)
+const isEditingVehicle = ref(false)
 
 const form = reactive({
   name: ''
@@ -518,16 +512,19 @@ const updateProfile = async () => {
 }
 
 // Edit vehicle
-const editVehicle = () => {
+const startEditingVehicle = () => {
   if (vehicle.value) {
-    Object.assign(vehicleForm, {
-      number: vehicle.value.number,
-      license_plate: vehicle.value.license_plate,
-      model: vehicle.value.model,
-      capacity: vehicle.value.capacity
-    })
-    showVehicleModal.value = true
+    vehicleForm.number = vehicle.value.number
+    vehicleForm.license_plate = vehicle.value.license_plate
+    vehicleForm.model = vehicle.value.model
+    vehicleForm.capacity = vehicle.value.capacity
+  } else {
+    vehicleForm.number = ''
+    vehicleForm.license_plate = ''
+    vehicleForm.model = ''
+    vehicleForm.capacity = 0
   }
+  isEditingVehicle.value = true
 }
 
 // Save vehicle
@@ -537,7 +534,7 @@ const saveVehicle = async () => {
   try {
     isUpdatingVehicle.value = true
     const vehicleData = {
-      vehicle_number: vehicleForm.number, // Map number to vehicle_number
+      vehicle_number: vehicleForm.number,
       license_plate: vehicleForm.license_plate,
       model: vehicleForm.model,
       capacity: vehicleForm.capacity,
@@ -546,7 +543,6 @@ const saveVehicle = async () => {
     }
 
     if (vehicle.value) {
-      // Update existing vehicle
       const { error } = await supabase
         .from('vehicles')
         .update(vehicleData)
@@ -554,7 +550,6 @@ const saveVehicle = async () => {
 
       if (error) throw error
     } else {
-      // Insert new vehicle
       const { error } = await supabase
         .from('vehicles')
         .insert(vehicleData)
@@ -563,7 +558,7 @@ const saveVehicle = async () => {
     }
 
     await fetchVehicle()
-    showVehicleModal.value = false
+    isEditingVehicle.value = false
 
     useToast().add({
       title: 'Success',
@@ -678,6 +673,16 @@ const startEditing = () => {
 const cancelEditing = () => {
   form.name = user.value?.name || ''
   isEditing.value = false
+}
+
+const cancelEditingVehicle = () => {
+  isEditingVehicle.value = false
+  if (vehicle.value) {
+    vehicleForm.number = vehicle.value.number
+    vehicleForm.license_plate = vehicle.value.license_plate
+    vehicleForm.model = vehicle.value.model
+    vehicleForm.capacity = vehicle.value.capacity
+  }
 }
 
 // Initialize
