@@ -200,7 +200,7 @@ const quickActions = [
     }
   },
   {
-    name: 'Scan QR',
+    name: 'QR Code',
     icon: 'heroicons:qr-code',
     onClick: () => {
       showQRModal.value = true
