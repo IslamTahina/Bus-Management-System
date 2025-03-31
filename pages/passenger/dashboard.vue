@@ -173,10 +173,6 @@
 <script setup lang="ts">
 import type { Database } from "@/types/supabase";
 
-definePageMeta({
-  layout: 'passenger',
-})
-
 type Route = Database["public"]["Tables"]["routes"]["Row"];
 
 const supabase = useSupabaseClient<Database>();

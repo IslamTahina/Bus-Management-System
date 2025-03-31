@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import UserHistory from '~/components/UserHistory.vue'
 </script>
 
 <template>

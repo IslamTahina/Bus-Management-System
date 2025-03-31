@@ -1,7 +1,4 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: 'driver',
-})
 
 import type { Database } from '@/types/supabase'
 import TripMap from '~/components/TripMap.vue'
