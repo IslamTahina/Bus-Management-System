@@ -1,30 +1,16 @@
 <template>
   <div>
     <!-- Toggle Menu Button and Profile -->
-    <div class="fixed top-4 left-4 z-[100] flex items-center gap-3">
-      <UButton
-        icon="i-heroicons-bars-3"
-        color="primary"
-        variant="ghost"
-        @click="isSidebarOpen = !isSidebarOpen"
-      />
-      <UButton
-        @click="openProfileModal"
-        variant="ghost"
-        class="flex items-center gap-3"
-      >
-        <UAvatar
-          :src="userProfile?.avatar_url || '/default-avatar.png'"
-          size="sm"
-          alt="Profile"
-        />
-        <span class="font-medium">{{ userProfile?.full_name || 'User' }}</span>
-      </UButton>
-    </div>
 
     <UHeader class="fixed top-0 left-0 right-0 z-50">
       <div class="px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-end h-16">
+        <div class="flex justify-between h-16 align-middle">
+          <div class="flex items-center gap-3 align-middle">
+            <!-- Navigation Slideover -->
+            <HeaderNavigation :navigationLinks="navigationLinks" />
+
+            <HeaderUser />
+          </div>
           <!-- Right Side Icons -->
           <div class="flex items-center space-x-6">
             <!-- Search Routes -->
@@ -70,7 +56,10 @@
                   <h3 class="text-sm font-semibold">Notifications</h3>
                 </template>
                 <div class="max-h-96 overflow-y-auto">
-                  <div v-if="notifications.length === 0" class="text-sm text-gray-500">
+                  <div
+                    v-if="notifications.length === 0"
+                    class="text-sm text-gray-500"
+                  >
                     No notifications
                   </div>
                   <div
@@ -79,7 +68,9 @@
                     class="py-3 hover:bg-gray-50"
                   >
                     <p class="text-sm">{{ notification.message }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ notification.time }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ notification.time }}
+                    </p>
                   </div>
                 </div>
               </UCard>
@@ -89,160 +80,115 @@
       </div>
     </UHeader>
 
-    <!-- Navigation Slideover -->
-    <USlideover
-      v-model="isSidebarOpen"
-      :class="{
-        'fixed inset-y-0 left-0 z-50 w-64 top-14': true,
-        'translate-x-0': isSidebarOpen,
-        '-translate-x-full': !isSidebarOpen
-      }"
-      class="h-[calc(100vh-3.5rem)] transition-transform duration-300 ease-in-out"
-    >
-      <template #header>
-        <div class="p-4">
-          <h2 class="text-xl font-semibold">Bus System</h2>
-          <p class="text-sm opacity-50">Passenger portal</p>
-        </div>
-      </template>
-
-      <div class="flex-1 p-4 space-y-2">
-        <UButton
-          v-for="link in navigationLinks"
-          :key="link.label"
-          :icon="link.icon"
-          variant="ghost"
-          class="w-full justify-start"
-          :class="{ 'bg-gray-100 dark:bg-gray-800': currentView === link.view }"
-          @click="link.click"
-        >
-          {{ link.label }}
-        </UButton>
-      </div>
-    </USlideover>
-
     <!-- Modals -->
-    <ProfileModal v-if="showProfileModal" @close="closeProfileModal" />
     <QRCodeModal v-if="showQRModal" @close="closeQRModal" />
     <SearchModal v-if="showSearchModal" @close="closeSearchModal" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '~/stores/user'
+import type { NavigationMenuItem } from "@nuxt/ui";
 
-interface UserProfile {
-  id: string
-  avatar_url?: string
-  full_name?: string
-}
+import { useUserStore } from "~/stores/user";
 
 interface Notification {
-  id: string
-  message: string
-  time: string
+  id: string;
+  message: string;
+  time: string;
 }
 
-const router = useRouter()
-const userStore = useUserStore()
-const userProfile = computed<UserProfile | null>(() => userStore.user)
+const router = useRouter();
+const userStore = useUserStore();
 
 // State
-const isSidebarOpen = inject('isSidebarOpen', ref(false))
-const showNotifications = ref(false)
-const showProfileModal = ref(false)
-const showQRModal = ref(false)
-const showSearchModal = ref(false)
-const unreadNotifications = ref(0)
-const notifications = ref<Notification[]>([])
-const currentView = ref('dashboard')
+const isSidebarOpen = inject("isSidebarOpen", ref(false));
+const showNotifications = ref(false);
+const showQRModal = ref(false);
+const showSearchModal = ref(false);
+const unreadNotifications = ref(0);
+const notifications = ref<Notification[]>([]);
+const currentView = ref("dashboard");
 
 // Methods
 const navigateTo = (view: string) => {
-  currentView.value = view
-  router.push(`/passenger/${view}`)
-  isSidebarOpen.value = false
-}
+  currentView.value = view;
+  router.push(`/passenger/${view}`);
+  isSidebarOpen.value = false;
+};
 
 const signOut = async () => {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient();
   try {
-    await supabase.auth.signOut()
-    router.push('/login')
+    await supabase.auth.signOut();
+    router.push("/login");
   } catch (err) {
-    console.error('Error signing out:', err)
+    console.error("Error signing out:", err);
   }
-}
+};
 
 // Navigation links
-const navigationLinks = [
+const navigationLinks: NavigationMenuItem[] = [
   {
-    label: 'Dashboard',
-    icon: 'i-lucide-layout-dashboard',
-    view: 'dashboard',
-    click: () => navigateTo('dashboard')
+    label: "Dashboard",
+    icon: "i-lucide-layout-dashboard",
+    view: "dashboard",
+    to: "/passenger/dashboard",
   },
   {
-    label: 'Wallet',
-    icon: 'i-lucide-wallet',
-    view: 'wallet',
-    click: () => navigateTo('wallet')
+    label: "Wallet",
+    icon: "i-lucide-wallet",
+    view: "wallet",
+    to: "/passenger/wallet",
   },
   {
-    label: 'History',
-    icon: 'i-lucide-history',
-    view: 'history',
-    click: () => navigateTo('history')
+    label: "History",
+    icon: "i-lucide-history",
+    view: "history",
+    to: "/passenger/history",
   },
   {
-    label: 'Profile',
-    icon: 'i-lucide-user',
-    view: 'profile',
-    click: () => navigateTo('profile')
+    label: "Profile",
+    icon: "i-lucide-user",
+    view: "profile",
+    to: "/passenger/profile",
   },
   {
-    label: 'Sign Out',
-    icon: 'i-lucide-log-out',
-    view: 'signout',
-    click: signOut
-  }
-]
+    label: "Sign Out",
+    icon: "i-lucide-log-out",
+    view: "signout",
+    onSelect: signOut,
+    to: "/login",
+  },
+];
+
 
 const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-}
-
-const openProfileModal = () => {
-  showProfileModal.value = true
-}
-
-const closeProfileModal = () => {
-  showProfileModal.value = false
-}
+  showNotifications.value = !showNotifications.value;
+};
 
 const openQRModal = () => {
-  showQRModal.value = true
-}
+  showQRModal.value = true;
+};
 
 const closeQRModal = () => {
-  showQRModal.value = false
-}
+  showQRModal.value = false;
+};
 
 const openSearchModal = () => {
-  showSearchModal.value = true
-}
+  showSearchModal.value = true;
+};
 
 const closeSearchModal = () => {
-  showSearchModal.value = false
-}
+  showSearchModal.value = false;
+};
 
 // Click outside to close notifications
 onMounted(() => {
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement
-    if (!target.closest('.notifications-dropdown')) {
-      showNotifications.value = false
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest(".notifications-dropdown")) {
+      showNotifications.value = false;
     }
-  })
-})
-</script> 
+  });
+});
+</script>

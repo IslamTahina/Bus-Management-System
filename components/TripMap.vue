@@ -136,7 +136,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="mapContainer" class="w-full h-full rounded-lg"></div>
+  <div ref="mapContainer" class="w-full h-full rounded-lg">
+    <img src="/map.png" alt="map" class="w-full h-[350px]" />
+  </div>
 </template>
 
 <style>
