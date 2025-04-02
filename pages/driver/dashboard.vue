@@ -1,188 +1,81 @@
 <script setup lang="ts">
+import type { Database } from "@/types/database.types";
+import TripMap from "~/components/TripMap.vue";
 
-import type { Database } from '@/types/supabase'
-import TripMap from '~/components/TripMap.vue'
+const supabase = useSupabaseClient<Database>();
+const user = useSupabaseUser();
 
-const supabase = useSupabaseClient<Database>()
-const user = useSupabaseUser()
+type TripWithRelations = Database["public"]["Tables"]["trips"]["Row"] & {
+  vehicles: Database["public"]["Tables"]["vehicles"]["Row"];
+  routes: Database["public"]["Tables"]["routes"]["Row"];
+};
 
-interface TripInfo {
-  id: string
-  vehicle_id: string
-  route_id: string
-  direction: boolean
-  start_time: string
-  seats_capacity: number
-  created_at: string | null
-  updated_at: string | null
-  end_time: string | null
-  vehicles: {
-    id: string
-    model: string
-    capacity: number
-    driver_id: string
-    license_plate: string
-  } | null
-  routes: {
-    id: string
-    fare: number
-    distance: number
-    average_time: number
-    end_location: string
-    start_location: string
-  } | null
-}
-
-const currentTrip = ref<TripInfo | null>(null)
-const upcomingTrips = ref<TripInfo[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const passengerCount = ref(0)
-const collectedFare = ref(0)
-
-const mockDestinationCoords = {
-  'Downtown': { lng: -73.998319, lat: 40.712034 },
-  'Uptown': { lng: -74.167901, lat: 40.733790 },
-  'Midtown': { lng: -73.987155, lat: 40.750539 }
-}
+const currentTrip = ref<TripWithRelations | null>(null);
+const upcomingTrips = ref<TripWithRelations[]>([]);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const passengerCount = ref(0);
+const collectedFare = ref(0);
 
 const remainingSeats = computed(() => {
-  if (!currentTrip.value) return 0
-  return currentTrip.value.seats_capacity - passengerCount.value
-})
-
-const destinationLocation = computed(() => {
-  if (!currentTrip.value?.routes?.start_location) return undefined
-  return mockDestinationCoords[currentTrip.value.routes.end_location as keyof typeof mockDestinationCoords]
-})
-
-const currentLocation = computed(() => {
-  if (!currentTrip.value?.routes?.end_location) return undefined
-  return mockDestinationCoords[currentTrip.value.routes.start_location as keyof typeof mockDestinationCoords]
-})
+  if (!currentTrip.value) return 0;
+  return (currentTrip.value.seats_capacity || 0) - passengerCount.value;
+});
 
 const updatePassengerCount = (increment: boolean) => {
-  if (!currentTrip.value?.routes) return
-  
-  if (increment && passengerCount.value < currentTrip.value.seats_capacity) {
-    passengerCount.value++
-    collectedFare.value += currentTrip.value.routes.fare
+  if (!currentTrip.value?.routes) return;
+
+  if (
+    increment &&
+    passengerCount.value < (currentTrip.value.seats_capacity || 0)
+  ) {
+    passengerCount.value++;
+    collectedFare.value += currentTrip.value.routes.fare;
   } else if (!increment && passengerCount.value > 0) {
-    passengerCount.value--
+    passengerCount.value--;
   }
-}
-
-const fetchTrips = async () => {
-  if (!user.value) {
-    error.value = 'No user found'
-    isLoading.value = false
-    return
-  }
-
-  try {
-    const { data: trips, error: tripsErr } = await supabase
-      .from('trips')
-      .select('*, vehicles(*), routes(*)')
-      .eq('vehicles.driver_id', user.value.id)
-      .order('start_time', { ascending: true })
-
-    if (tripsErr) throw tripsErr
-
-    if (trips && trips.length > 0) {
-      console.log('Raw trips data:', trips)
-      const currentTime = new Date()
-      console.log('Current time:', currentTime.toLocaleTimeString())
-      
-      const typedTrips = trips as (TripInfo & { end_time: string | null })[]
-      
-      // Find the current trip based on time window
-      const currentTripData = typedTrips.find(trip => {
-        console.log('Processing trip:', trip)
-        console.log('Start time string:', trip.start_time)
-        
-        // Create a date object by combining current date with the time from Supabase
-        const today = new Date()
-        const [hours, minutes, seconds] = trip.start_time.split(':').map(Number)
-        const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, seconds)
-        
-        // Calculate end time based on route's average time
-        const endTime = new Date(startTime.getTime() + (trip.routes?.average_time || 0) * 60000)
-        
-        // If start time is in the future but within 24 hours, use it
-        if (startTime > currentTime) {
-          const timeDiff = startTime.getTime() - currentTime.getTime()
-          if (timeDiff <= 24 * 60 * 60 * 1000) { // Within 24 hours
-            console.log('Trip starts in the future within 24h')
-          }
-        }
-        
-        // If the trip should have ended but hasn't, consider it active
-        const shouldBeActive = currentTime >= startTime && currentTime <= endTime
-        console.log('Time comparison:', {
-          currentTime: currentTime.toLocaleTimeString(),
-          startTime: startTime.toLocaleTimeString(),
-          endTime: endTime.toLocaleTimeString(),
-          shouldBeActive,
-          notEnded: !trip.end_time
-        })
-        
-        return shouldBeActive && !trip.end_time
-      })
-      
-      if (currentTripData) {
-        console.log('Found active trip:', currentTripData)
-        currentTrip.value = currentTripData
-      } else {
-        console.log('No active trip found')
-        currentTrip.value = null
-      }
-
-      const currentTripIndex = typedTrips.findIndex(trip => trip.id === currentTrip.value?.id)
-      upcomingTrips.value = typedTrips.slice(currentTripIndex + 1).map(trip => ({
-        ...trip,
-        end_time: null
-      }))
-    }
-  } catch (err: any) {
-    console.error('Error fetching trips:', err)
-    error.value = 'Failed to load trips'
-  } finally {
-    isLoading.value = false
-  }
-}
+};
 
 // Add a computed property for formatted date
 const formatTripDate = (dateString: string) => {
   try {
-    // Create a date object by combining current date with the time from Supabase
-    const today = new Date()
-    const [hours, minutes, seconds] = dateString.split(':').map(Number)
-    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, seconds)
-    
-    // If the time has already passed today, set it for tomorrow
-    if (date < new Date()) {
-      date.setDate(date.getDate() + 1)
-    }
-    
-    if (isNaN(date.getTime())) {
-      console.error('Invalid date:', dateString)
-      return 'Invalid Date'
-    }
-    // Format to show only time in 12-hour format
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true 
-    })
-  } catch (err) {
-    console.error('Error formatting date:', err)
-    return 'Invalid Date'
-  }
-}
+    const date = new Date(dateString);
 
-onMounted(() => {
-  fetchTrips()
-})
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date:", dateString);
+      return "Invalid Date";
+    }
+    // Format to show date and time
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
+    console.error("Error formatting date:", err);
+    return "Invalid Date";
+  }
+};
+
+const availableSeats = ref(0);
+
+onMounted(async () => {
+  useScannerStore().openScanner();
+
+  await useTripsStore().getTrips();
+  upcomingTrips.value = useTripsStore().trips;
+  isLoading.value = false;
+  // fetchTrips()
+});
+
+const topTrip = computed(() => {
+  if (useTripsStore().currentActiveTrip)
+    return useTripsStore().currentActiveTrip;
+
+  return useTripsStore().trips[0];
+});
 </script>
 
 <template>
@@ -194,19 +87,15 @@ onMounted(() => {
 
       <USkeleton v-if="isLoading" class="h-32" />
 
-      <UAlert
-        v-else-if="error"
-        color="error"
-        :title="error"
-      />
+      <UAlert v-else-if="error" color="error" :title="error" />
 
-      <template v-else>
+      <div v-else-if="upcomingTrips.length">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <UCard class="h-[400px]">
-            <template v-if="currentTrip">
-              <TripMap 
-                :current-location="currentLocation"
-                :destination="destinationLocation"
+            <template v-if="topTrip">
+              <TripMap
+                :current-location="topTrip.routes.start_location"
+                :destination="topTrip.routes.end_location"
               />
             </template>
             <template v-else>
@@ -218,87 +107,169 @@ onMounted(() => {
 
           <UCard>
             <template #header>
-              <div class="flex items-center justify-between">
-                <h3 class="text-lg font-medium">Current Trip</h3>
-                <div class="flex items-center gap-2">
-                  <template v-if="currentTrip">
-                    <UButton
-                      to="/driver/scanner"
-                      color="primary"
-                      variant="ghost"
-                      icon="i-heroicons-qr-code"
-                    >
-                      Scan QR
-                    </UButton>
-                    <UBadge color="success">Active</UBadge>
-                  </template>
-                  <template v-else>
-                    <UBadge color="neutral">No Active Trip</UBadge>
-                  </template>
-                </div>
+              <div
+                v-if="topTrip"
+                class="flex w-full"
+                :class="
+                  topTrip.id == useTripsStore().currentActiveTrip?.id
+                    ? 'justify-between'
+                    : 'justify-end'
+                "
+              >
+                <UButton
+                  disabled
+                  color="success"
+                  v-if="topTrip.id == useTripsStore().currentActiveTrip?.id"
+                >
+                  Trip Progress
+                </UButton>
+                <UButton
+                  @click="useTripsStore().activateTrip(topTrip.id)"
+                  color="primary"
+                  variant="ghost"
+                  icon="i-heroicons-bolt"
+                  v-if="
+                    !topTrip.actual_depart_time &&
+                    !useTripsStore().currentActiveTrip
+                  "
+                >
+                  Start Trip
+                </UButton>
+
+                <UButton
+                  v-else-if="!topTrip.actual_depart_time"
+                  label="Depart"
+                  color="primary"
+                  variant="ghost"
+                  icon="i-heroicons-arrow-right"
+                  @click="useTripsStore().setDepartureTime()"
+                />
+                <UButton
+                  v-else-if="
+                    topTrip.actual_depart_time && !topTrip.actual_arrival_time
+                  "
+                  @click="useTripsStore().endTrip()"
+                  color="error"
+                  variant="ghost"
+                  icon="i-heroicons-arrow-right-end-on-rectangle"
+                >
+                  End Trip
+                </UButton>
               </div>
             </template>
 
-            <template v-if="currentTrip && currentTrip.routes && currentTrip.vehicles">
+            <template v-if="topTrip && topTrip.routes && topTrip.vehicles">
               <div class="space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <div class="text-sm text-muted">From</div>
-                    <div class="font-medium">{{ currentTrip.routes.start_location }}</div>
-                  </div>
-                  <div>
-                    <div class="text-sm text-muted">To</div>
-                    <div class="font-medium">{{ currentTrip.routes.end_location }}</div>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-4">
-                  <div>
-                    <div class="text-sm text-muted">Passengers</div>
-                    <div class="flex items-center gap-2">
-                      <UButton 
-                        @click="updatePassengerCount(false)" 
-                        icon="i-heroicons-minus" 
-                        size="sm" 
-                        :disabled="passengerCount === 0" 
-                      />
-                      <span class="font-medium">{{ passengerCount }}/{{ currentTrip.seats_capacity }}</span>
-                      <UButton 
-                        @click="updatePassengerCount(true)" 
-                        icon="i-heroicons-plus" 
-                        size="sm" 
-                        :disabled="passengerCount === currentTrip.seats_capacity" 
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div class="text-sm text-muted">Collected Fare</div>
-                    <div class="font-medium">{{ collectedFare.toFixed(2) }} tokens</div>
-                  </div>
-                  <div>
-                    <div class="text-sm text-muted">Remaining Seats</div>
-                    <div class="font-medium">{{ remainingSeats }}</div>
+                <div>
+                  <div class="text-muted">Collected Fare</div>
+                  <div class="flex items-center">
+                    <UIcon name="i-lucide-dollar-sign" class="size-8" />
+                    <span class="font-medium text-3xl text-success-500">
+                      {{ topTrip.collected_fare }}
+                    </span>
                   </div>
                 </div>
 
                 <UCard>
-                  <div class="grid grid-cols-2 gap-4">
+                  <template #header>
+                    <div class="flex items-center justify-between">
+                      <h3 class="text-lg font-medium">Route</h3>
+                      <UIcon name="i-lucide-map-pin" />
+                    </div>
+                  </template>
+                  <div class="flex items-center justify-around gap-4">
                     <div>
-                      <div class="text-sm text-muted">Vehicle</div>
-                      <div class="font-medium">{{ currentTrip.vehicles.model }}</div>
+                      <div class="text-sm text-muted">From</div>
+                      <div class="font-medium">
+                        {{ topTrip.routes.start_location }}
+                      </div>
                     </div>
                     <div>
-                      <div class="text-sm text-muted">License Plate</div>
-                      <div class="font-medium">{{ currentTrip.vehicles.license_plate }}</div>
+                      <UIcon class="size-8" name="i-heroicons-arrow-right" />
+                    </div>
+                    <div>
+                      <div class="text-sm text-muted">To</div>
+                      <div class="font-medium">
+                        {{ topTrip.routes.end_location }}
+                      </div>
                     </div>
                   </div>
                 </UCard>
+
+                <div>
+                  <div class="text-muted">Remaining Seats</div>
+                  <div class="font-medium flex justify-between px-5 text-left">
+                    <span class="text-4xl">
+                      {{ topTrip.seats_capacity }}
+                    </span>
+
+                    <UButton
+                      :disabled="!useTripsStore().currentActiveTrip"
+                      color="info"
+                      label="Passenger Left"
+                      icon="i-lucide-armchair"
+                      size="xl"
+                      @click="useTripsStore().passangerLeft()"
+                      variant="outline"
+                    />
+
+                    <UPopover>
+                      <UButton
+                        :disabled="!useTripsStore().currentActiveTrip"
+                        color="warning"
+                        icon="i-lucide-armchair"
+                        variant="ghost"
+                      />
+
+                      <template #content>
+                        <UCard class="p-4">
+                          <form
+                            @submit.prevent="
+                              useTripsStore().setAvailableSeats(availableSeats)
+                            "
+                          >
+                            <UInput v-model="availableSeats" type="number" />
+                            <br />
+                            <UButton type="submit" color="primary" class="my-3"
+                              >Override Available Seats Manually</UButton
+                            >
+                          </form>
+                        </UCard>
+                      </template>
+                    </UPopover>
+                  </div>
+                </div>
+
+                <UPopover>
+                  <UButton color="info" icon="i-lucide-bus" />
+
+                  <template #content>
+                    <UCard>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <div class="text-sm text-muted">Vehicle</div>
+                          <div class="font-medium">
+                            {{ topTrip.vehicles.model }}
+                          </div>
+                        </div>
+                        <div>
+                          <div class="text-sm text-muted">License Plate</div>
+                          <div class="font-medium">
+                            {{ topTrip.vehicles.license_plate }}
+                          </div>
+                        </div>
+                      </div>
+                    </UCard>
+                  </template>
+                </UPopover>
               </div>
             </template>
             <template v-else>
               <div class="text-center py-8">
                 <h3 class="text-lg font-medium mb-2">No Active Trip</h3>
-                <p class="text-muted">You don't have any active trips at the moment.</p>
+                <p class="text-muted">
+                  You don't have any active trips at the moment.
+                </p>
               </div>
             </template>
           </UCard>
@@ -311,26 +282,35 @@ onMounted(() => {
             <div v-if="upcomingTrips.length === 0" class="text-muted">
               No upcoming trips scheduled
             </div>
-            
+
             <div v-else class="divide-y">
               <template v-for="trip in upcomingTrips" :key="trip.id">
                 <div v-if="trip.routes" class="py-4">
                   <div class="grid grid-cols-4 gap-4">
                     <div>
                       <div class="text-sm text-muted">Start Time</div>
-                      <div class="font-medium">{{ formatTripDate(trip.start_time) }}</div>
+                      <div class="font-medium">
+                        {{ formatTripDate(trip.scheduled_depart_time) }}
+                      </div>
                     </div>
                     <div>
                       <div class="text-sm text-muted">Route</div>
-                      <div class="font-medium">{{ trip.routes.start_location }} → {{ trip.routes.end_location }}</div>
+                      <div class="font-medium">
+                        {{ trip.routes.start_location }} →
+                        {{ trip.routes.end_location }}
+                      </div>
                     </div>
                     <div>
                       <div class="text-sm text-muted">Fare</div>
-                      <div class="font-medium">{{ trip.routes.fare }} tokens</div>
+                      <div class="font-medium">
+                        {{ trip.routes.fare }} tokens
+                      </div>
                     </div>
                     <div>
                       <div class="text-sm text-muted">Duration</div>
-                      <div class="font-medium">{{ trip.routes.average_time }} minutes</div>
+                      <div class="font-medium">
+                        {{ trip.routes.average_time }} minutes
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -338,7 +318,15 @@ onMounted(() => {
             </div>
           </UCard>
         </div>
-      </template>
+      </div>
+      <div v-else>
+        <div class="text-center py-8">
+          <h3 class="text-lg font-medium mb-2">No upcoming trips scheduled</h3>
+          <p class="text-muted">
+            You don't have any upcoming trips scheduled at the moment.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
-</template> 
+</template>

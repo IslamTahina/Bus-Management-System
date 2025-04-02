@@ -70,11 +70,6 @@
 <script setup lang="ts">
 import jsQR from "jsqr";
 
-const props = defineProps<{
-  tripId: string;
-  tripFare: Number;
-}>();
-
 const videoRef = ref<HTMLVideoElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const scanResult = ref<string | null>(null);
@@ -82,47 +77,72 @@ const PaymentStatus = ref<{ success: boolean; message: string } | null>(null);
 const ProcessingPayment = ref<boolean>(false);
 const stream = ref<MediaStream | null>(null);
 const scanningInterval = ref<number | null>(null);
-
+const tripId = ref<string | null>(null);
+const tripFare = ref<number | null>(null);
+const scannerLive = ref<boolean>(false);
 onMounted(async () => {
   // Fetch current trip data from backend
   // For now, using mock data
 
   try {
-    // Request camera access
-    stream.value = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
+    window.addEventListener("message", (event) => {
+      console.log("message", event);
+      if (event?.data?.type == "trip" && event?.data?.trip) {
+        tripId.value = event?.data?.trip?.id;
+        tripFare.value = event?.data?.trip?.fare;
+      }
     });
-
-    if (videoRef.value) {
-      videoRef.value.srcObject = stream.value;
-      // Start scanning after video is ready
-      videoRef.value.onloadedmetadata = async () => {
-        while (true) {
-          const result = await startScanning();
-          if (result) {
-            scanResult.value = result;
-            await processPayment(result);
-            console.log("Stream", stream.value);
-            if (videoRef.value) {
-              videoRef.value.srcObject = stream.value;
-            }
-          }
-        }
-      };
-    }
   } catch (error) {
     console.error("Error accessing camera:", error);
   }
 });
 
-onUnmounted(() => {
-  // Clean up camera stream and scanning interval
+watch(tripId, () => {
+  if (tripId.value !== null && scannerLive.value == false) {
+    initScanner();
+  }
+});
+
+// Start Scanner
+const initScanner = async () => {
+  scannerLive.value = true;
+  stream.value = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
+  });
+
+  if (videoRef.value) {
+    videoRef.value.srcObject = stream.value;
+    // Start scanning after video is ready
+    videoRef.value.onloadedmetadata = async () => {
+      while (true) {
+        const result = await startScanning();
+        if (result) {
+          scanResult.value = result;
+          await processPayment(result);
+          console.log("Stream", stream.value);
+          if (videoRef.value) {
+            videoRef.value.srcObject = stream.value;
+          }
+        }
+      }
+    };
+  }
+};
+
+// Destroy scanner
+const destroyScanner = () => {
   if (stream.value) {
     stream.value.getTracks().forEach((track) => track.stop());
   }
   if (scanningInterval.value) {
     clearInterval(scanningInterval.value);
   }
+  scannerLive.value = false;
+};
+
+onUnmounted(() => {
+  // Clean up camera stream and scanning interval
+  destroyScanner();
 });
 
 const startScanning = (): Promise<string> => {
@@ -180,9 +200,9 @@ const processPayment = (qrData: string): Promise<boolean> => {
       .from("transactions")
       .insert({
         user_id: qrData,
-        tokens: props.tripFare,
+        tokens: tripFare.value,
         transaction_type: "debit",
-        trip_id: props.tripId,
+        trip_id: tripId.value,
       } as any);
     if (error) {
       console.error("Error processing payment:", error);

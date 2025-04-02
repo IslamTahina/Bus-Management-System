@@ -36,7 +36,6 @@ export const useUserStore = defineStore("users", {
           .select("role")
           .eq("id", userid)
           .single();
-        console.log("data", data);
         if (error) {
           console.error("Error fetching user role:", error);
           return;

@@ -57,89 +57,6 @@ export type Database = {
           },
         ]
       }
-      drivers: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-          phone: string
-          updated_at: string | null
-          user_id: string | null
-          vehicle_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          phone: string
-          updated_at?: string | null
-          user_id?: string | null
-          vehicle_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          phone?: string
-          updated_at?: string | null
-          user_id?: string | null
-          vehicle_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "drivers_vehicle_id_fkey"
-            columns: ["vehicle_id"]
-            isOneToOne: false
-            referencedRelation: "vehicles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      operating_hours: {
-        Row: {
-          created_at: string | null
-          driver_id: string | null
-          end_time: string
-          id: string
-          route_id: string | null
-          start_time: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          driver_id?: string | null
-          end_time: string
-          id?: string
-          route_id?: string | null
-          start_time: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          driver_id?: string | null
-          end_time?: string
-          id?: string
-          route_id?: string | null
-          start_time?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operating_hours_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "drivers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "operating_hours_route_id_fkey"
-            columns: ["route_id"]
-            isOneToOne: false
-            referencedRelation: "routes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       payments: {
         Row: {
           amount: number
@@ -261,43 +178,43 @@ export type Database = {
       }
       trips: {
         Row: {
-          id: string
-          vehicle_id: string | null
-          route_id: string | null
-          seats_capacity: number | null
-          created_at: string | null
-          updated_at: string | null
-          actual_depart_time: string | null
           actual_arrival_time: string | null
+          actual_depart_time: string | null
+          collected_fare: number | null
+          created_at: string | null
+          id: string
+          route_id: string | null
           scheduled_arrival_time: string
           scheduled_depart_time: string
-          collected_fare: number | null
+          seats_capacity: number | null
+          updated_at: string | null
+          vehicle_id: string | null
         }
         Insert: {
-          id?: string
-          vehicle_id?: string | null
-          route_id?: string | null
-          seats_capacity?: number | null
-          created_at?: string | null
-          updated_at?: string | null
-          actual_depart_time?: string | null
           actual_arrival_time?: string | null
+          actual_depart_time?: string | null
+          collected_fare?: number | null
+          created_at?: string | null
+          id?: string
+          route_id?: string | null
           scheduled_arrival_time: string
           scheduled_depart_time: string
-          collected_fare?: number | null
+          seats_capacity?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
         }
         Update: {
-          id?: string
-          vehicle_id?: string | null
-          route_id?: string | null
-          seats_capacity?: number | null
-          created_at?: string | null
-          updated_at?: string | null
-          actual_depart_time?: string | null
           actual_arrival_time?: string | null
+          actual_depart_time?: string | null
+          collected_fare?: number | null
+          created_at?: string | null
+          id?: string
+          route_id?: string | null
           scheduled_arrival_time?: string
           scheduled_depart_time?: string
-          collected_fare?: number | null
+          seats_capacity?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -347,6 +264,7 @@ export type Database = {
         Row: {
           capacity: number
           created_at: string | null
+          driver_id: string | null
           id: string
           license_plate: string
           model: string
@@ -355,6 +273,7 @@ export type Database = {
         Insert: {
           capacity: number
           created_at?: string | null
+          driver_id?: string | null
           id?: string
           license_plate: string
           model: string
@@ -363,12 +282,21 @@ export type Database = {
         Update: {
           capacity?: number
           created_at?: string | null
+          driver_id?: string | null
           id?: string
           license_plate?: string
           model?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -1,6 +1,6 @@
 <template>
   <UApp>
-    <PassengerHeader />
+    <Header/>
     <main 
       class="transition-all duration-300 ease-in-out pt-14"
       :class="{ 'pl-64': isSidebarOpen }"
