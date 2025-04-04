@@ -270,7 +270,6 @@
         </template>
       </UCard>
 
-      <!-- Danger Zone -->
       <UCard>
         <template #header>
           <h3 class="text-lg font-medium text-red-500">Danger Zone</h3>
@@ -612,7 +611,6 @@ const changePassword = async () => {
 
     if (error) throw error
 
-    // Clear password form and hide it
     cancelPasswordChange()
 
     useToast().add({

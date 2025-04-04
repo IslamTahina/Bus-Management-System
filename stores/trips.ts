@@ -141,9 +141,7 @@ export const useTripsStore = defineStore("trips", {
               const startTime = new Date(trip.scheduled_depart_time)
               const endTime = new Date(trip.scheduled_arrival_time)
               
-              // If the trip hasn't ended yet and either:
-              // 1. It's currently within the time window, or
-              // 2. It's starting now (within 5 minutes of current time)
+
               const isWithinTimeWindow = currentTime >= startTime && currentTime <= endTime
               const isStartingNow = Math.abs(startTime.getTime() - currentTime.getTime()) <= 5 * 60 * 1000 // 5 minutes
               

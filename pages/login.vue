@@ -3,16 +3,13 @@
     <div :class="['min-h-screen p-6 flex items-center justify-center']">
       <div :class="['w-full max-w-md']">
         <UCard :ui="{ body: 'p-3' }">
-          <!-- Header -->
           <template #header>
             <div :class="['text-center']">
               <h1 :class="['text-2xl']">Sign in to your account</h1>
             </div>
           </template>
 
-          <!-- Login Form -->
           <UForm :state="form" @submit.prevent="login" class="space-y-6">
-            <!-- Email Input -->
             <UFormField label="Email" name="email">
               <UInput
                 size="xl"
@@ -47,14 +44,12 @@
                 </template>
               </UInput>
             </UFormField>
-            <!-- Remember Me & Forgot Password -->
             <div class="flex items-center justify-between">
               <UCheckbox label="Remember me" />
 
               <ULink to="/forgot-password"> Forgot password? </ULink>
             </div>
 
-            <!-- Error Message -->
             <div
               v-if="errorMessage"
               class="p-4 bg-red-900/50 text-red-200 rounded-lg text-sm"
@@ -62,7 +57,6 @@
               {{ errorMessage }}
             </div>
 
-            <!-- Login Button -->
             <UButton
               type="submit"
               block
@@ -73,7 +67,6 @@
               <span v-else>Sign In</span>
             </UButton>
 
-            <!-- Register Link -->
             <div class="text-center mt-6">
               <span class="text-gray-400">Don't have an account? </span>
               <ULink to="/register"> Sign Up </ULink>
@@ -121,7 +114,6 @@ const login = async () => {
       return;
     }
 
-    // Successful login
     await useRouter().push("/");
   } catch (error) {
     console.error("Unexpected error:", error);

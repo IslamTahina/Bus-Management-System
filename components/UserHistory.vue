@@ -16,7 +16,6 @@ const fetchTransactions = async () => {
     console.log("No user found");
     return;
   }
-  // Create a function to handle inserts
   const handleUpdates = (data: any) => {
     console.log("Change received!", data);
   };
@@ -34,7 +33,6 @@ const fetchTransactions = async () => {
   try {
     console.log("Fetching customer ID for user:", user.value.id);
 
-    // Get customer ID
     const { data: customerData, error: customerErr } = await supabase
       .from("users")
       .select("id")
@@ -126,7 +124,6 @@ const formatDate = (dateString: string) => {
 
 <template>
   <div>
-    <!-- Debug Info -->
     <div v-if="error" class="mb-4">
       <UAlert color="info" :title="'Debug Info'">
         <p>User ID: {{ user?.id }}</p>
@@ -138,12 +135,10 @@ const formatDate = (dateString: string) => {
     </div>
 
     <UCard>
-      <!-- Loading State -->
       <div v-if="isLoading">
         <USkeleton v-for="i in 3" :key="i" class="mb-2" />
       </div>
 
-      <!-- Empty State -->
       <div v-else-if="trips.length === 0">
         <p>No trips found.</p>
       </div>
@@ -157,7 +152,6 @@ const formatDate = (dateString: string) => {
         >
           <div class="flex justify-between items-start">
             <div class="space-y-3 flex-1">
-              <!-- Route and Time Info -->
               <div class="flex items-center space-x-4">
                 <div class="flex-1">
                   <div class="flex items-center space-x-3">

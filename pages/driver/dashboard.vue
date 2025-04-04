@@ -36,7 +36,6 @@ const updatePassengerCount = (increment: boolean) => {
   }
 };
 
-// Add a computed property for formatted date
 const formatTripDate = (dateString: string) => {
   try {
     const date = new Date(dateString);
@@ -45,7 +44,6 @@ const formatTripDate = (dateString: string) => {
       console.error("Invalid date:", dateString);
       return "Invalid Date";
     }
-    // Format to show date and time
     return date.toLocaleString("en-US", {
       month: "short",
       day: "numeric",

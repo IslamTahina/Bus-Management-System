@@ -14,7 +14,6 @@
       </div>
 
       <div class="space-y-4">
-        <!-- Search Input -->
         <div class="relative">
           <Icon
             name="heroicons:magnifying-glass"
@@ -29,7 +28,6 @@
           />
         </div>
 
-        <!-- Search Results -->
         <div class="max-h-96 overflow-y-auto">
           <div v-if="loading" class="flex justify-center py-4">
             <div
@@ -87,7 +85,7 @@ const handleSearch = async () => {
   loading.value = true;
   try {
     // TODO: Replace with actual API call to search routes
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 500)); 
     searchResults.value = [
       {
         id: 1,
@@ -96,7 +94,6 @@ const handleSearch = async () => {
         endLocation: "Airport",
         duration: 30,
       },
-      // Add more mock results as needed
     ];
   } catch (error) {
     console.error("Error searching routes:", error);

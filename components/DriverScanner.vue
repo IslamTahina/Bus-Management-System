@@ -81,9 +81,6 @@ const tripId = ref<string | null>(null);
 const tripFare = ref<number | null>(null);
 const scannerLive = ref<boolean>(false);
 onMounted(async () => {
-  // Fetch current trip data from backend
-  // For now, using mock data
-
   try {
     window.addEventListener("message", (event) => {
       console.log("message", event);
@@ -112,7 +109,6 @@ const initScanner = async () => {
 
   if (videoRef.value) {
     videoRef.value.srcObject = stream.value;
-    // Start scanning after video is ready
     videoRef.value.onloadedmetadata = async () => {
       while (true) {
         const result = await startScanning();
@@ -141,7 +137,6 @@ const destroyScanner = () => {
 };
 
 onUnmounted(() => {
-  // Clean up camera stream and scanning interval
   destroyScanner();
 });
 
@@ -194,7 +189,6 @@ const startScanning = (): Promise<string> => {
 const processPayment = (qrData: string): Promise<boolean> => {
   return new Promise(async (resolve, reject) => {
     ProcessingPayment.value = true;
-    // Mock payment processing
 
     const { data, error } = await useSupabaseClient()
       .from("transactions")

@@ -54,7 +54,6 @@ const setupBalanceSubscription = async () => {
       )
       .subscribe()
 
-    // Cleanup subscription on component unmount
     onUnmounted(() => {
       subscription.unsubscribe()
     })
@@ -130,12 +129,10 @@ onMounted(() => {
         </div>
       </template>
 
-      <!-- Loading State -->
       <div v-if="isLoading">
         <USkeleton class="h-8 w-24 mb-2" />
       </div>
 
-      <!-- Error State -->
       <UAlert
         v-else-if="error"
         color="error"

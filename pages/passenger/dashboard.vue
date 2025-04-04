@@ -1,7 +1,6 @@
 <template>
   <UContainer>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- Quick Actions -->
       <div class="col-span-full lg:col-span-2">
         <UCard :ui="{ root: 'bg-transparent border-none' }">
           <template #header>

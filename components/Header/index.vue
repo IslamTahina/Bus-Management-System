@@ -9,7 +9,6 @@
           <HeaderUser />
         </div>
         <div>
-          <!-- Right Side Icons -->
           <div class="flex items-center space-x-6">
             <!-- Search Routes -->
             <UButton

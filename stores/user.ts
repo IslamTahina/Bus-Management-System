@@ -12,7 +12,6 @@ export const useUserStore = defineStore("users", {
   }),
   actions: {
     async getNotifications(): Promise<Notification[]> {
-      // Gets notification from supabase and updates the notification object in the state, also set the unread notifications to proper value
       //   const supabase = useSupabaseClient();
       //   const { data, error } = await supabase
       //     .from("notifications")
@@ -22,7 +21,6 @@ export const useUserStore = defineStore("users", {
       return [];
     },
     getUnreadNotifications(): number {
-      // Gets the number of unread notifications from the notification object in the state
       return this.unreadNotifications;
     },
     async fetchRole() {

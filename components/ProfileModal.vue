@@ -120,8 +120,6 @@ const onFileSelected = async (event: Event) => {
 
   try {
     // TODO: Implement file upload logic
-    // const avatarUrl = await uploadFile(file)
-    // await userStore.updateProfile({ avatar_url: avatarUrl })
   } catch (error) {
     console.error('Error uploading image:', error)
   } finally {

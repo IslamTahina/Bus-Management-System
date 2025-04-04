@@ -1,16 +1,13 @@
 <template>
   <div class="min-h-screen p-6 flex items-center justify-center">
     <UCard class="w-full max-w-md p-3">
-      <!-- Header -->
       <template #header>
         <div class="text-center">
           <h1 class="text-2xl">Sign up to your account</h1>
         </div>
       </template>
 
-      <!-- Register Form -->
       <UForm :state="form" @submit.prevent="register" class="space-y-6">
-        <!-- Full Name Input -->
         <UFormField label="Full Name" name="name">
           <UInput
             v-model="form.name"
@@ -21,7 +18,6 @@
           />
         </UFormField>
 
-        <!-- Email Input -->
         <UFormField label="Email" name="email">
           <UInput
             v-model="form.email"
@@ -33,7 +29,6 @@
           />
         </UFormField>
 
-        <!-- Password Input -->
         <UFormField label="Password" name="password">
           <UInput
             v-model="form.password"
@@ -58,7 +53,6 @@
           </UInput>
         </UFormField>
 
-        <!-- Confirm Password Input -->
         <UFormField label="Confirm Password" name="confirmPassword">
           <UInput
             v-model="form.confirmPassword"
@@ -87,7 +81,6 @@
           </UInput>
         </UFormField>
 
-        <!-- Error Message -->
         <div
           v-if="errorMessage"
           class="p-4 bg-red-900/50 text-red-200 rounded-lg text-sm"
@@ -95,12 +88,10 @@
           {{ errorMessage }}
         </div>
 
-        <!-- Register Button -->
         <UButton type="submit" block :loading="isLoading" :disabled="isLoading">
           {{ isLoading ? "Registering..." : "Sign Up" }}
         </UButton>
 
-        <!-- Sign In Link -->
         <div class="text-center mt-6">
           <span class="text-gray-400">Already have an account? </span>
           <ULink to="/login">Sign In</ULink>
