@@ -3,6 +3,7 @@
     <div class="px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16 align-middle">
         <div class="flex items-center gap-3 align-middle">
+            <ColorModeButton/> 
           <!-- Navigation Slideover -->
           <HeaderNavigation :navigationLinks="getNavigationLinks" />
           <HeaderUser />

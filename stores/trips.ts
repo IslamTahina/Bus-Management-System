@@ -1,7 +1,16 @@
+import { defineStore } from 'pinia'
+import type { Database } from '~/types/database.types'
+
+type Trip = Database['public']['Tables']['trips']['Row'] & {
+  vehicles?: Database['public']['Tables']['vehicles']['Row'] | null
+  routes?: Database['public']['Tables']['routes']['Row'] | null
+}
+
 export const useTripsStore = defineStore("trips", {
   state: () => ({
-    trips: [] as any,
-    currentActiveTrip: null as any,
+    trips: [] as Trip[],
+    currentActiveTrip: null as Trip | null,
+    subscriptions: [] as any[],
   }),
   actions: {
     async getTrips() {
@@ -20,103 +29,100 @@ export const useTripsStore = defineStore("trips", {
 
       if (tripsErr) throw tripsErr;
 
-      this.trips = trips;
-      const vehicleId = trips[0]?.vehicles?.id;
-      if (vehicleId) {
-        supabase
-          .channel("trips")
-          .on(
-            "postgres_changes",
-            {
-              event: "UPDATE",
-              schema: "public",
-              table: "trips",
-              filter: "vehicle_id=eq." + vehicleId,
-            },
-            (payload) => {
-              this.trips = this.trips.map((trip: any) => {
-                if (trip.id == payload.new.id) {
-                  return payload.new;
-                }
-                return trip;
-              });
-              if (payload.new.id == this.currentActiveTrip?.id) {
-                this.currentActiveTrip = payload.new;
-              }
-            }
-          )
-          .subscribe();
+      this.trips = trips as Trip[];
+      
+      // Restore active trip from localStorage if it exists
+      const savedActiveTripId = localStorage.getItem('activeTripId');
+      if (savedActiveTripId) {
+        const savedTrip = this.trips.find(trip => trip.id === savedActiveTripId);
+        if (savedTrip) {
+          this.currentActiveTrip = savedTrip;
+          // Send trip data to scanner
+          useScannerStore().sendTripData(
+            savedTrip.id,
+            savedTrip.routes?.fare || 0
+          );
+        }
       }
     },
+
     activateTrip(tripId: string) {
       console.log("activateTrip", tripId);
-      this.currentActiveTrip = this.trips.find(
-        (trip: any) => trip.id == tripId
+      const trip = this.trips.find(
+        (trip) => trip.id == tripId
       );
-      console.log("currentActiveTrip", this.currentActiveTrip);
-      useScannerStore().sendTripData(
-        tripId,
-        this.currentActiveTrip?.routes.fare
-      );
-    },
-    async updatePassengerCount(value: number) {
-      const count = this.currentActiveTrip.vehicles.capacity - value;
-      const supabase = useSupabaseClient();
-      const { data: trip, error: tripErr } = await supabase
-        .from("trips")
-        .update({ seats_capacity: count })
-        .eq("id", this.currentActiveTrip.id);
-
-      if (tripErr) throw tripErr;
-      this.currentActiveTrip.seats_capacity = count;
-    },
-    async setAvailableSeats(count: number) {
-      const supabase = useSupabaseClient();
-      const { data: trip, error: tripErr } = await supabase
-        .from("trips")
-        .update({ seats_capacity: count })
-        .eq("id", this.currentActiveTrip.id);
-
-      if (tripErr) throw tripErr;
-      this.currentActiveTrip.seats_capacity = count;
-    },
-
-    async passangerLeft() {
-      const supabase = useSupabaseClient();
-      const { data: trip, error: tripErr } = await supabase
-        .from("trips")
-        .update({ seats_capacity: this.currentActiveTrip.seats_capacity + 1 })
-        .eq("id", this.currentActiveTrip.id);
-
-      if (tripErr) throw tripErr;
-      this.currentActiveTrip.seats_capacity += 1;
-    },
-
-    async setDepartureTime() {
-      if (this.currentActiveTrip) {
-        const supabase = useSupabaseClient();
-        const { data: trip, error: tripErr } = await supabase
-          .from("trips")
-          .update({ actual_depart_time: new Date().toISOString() })
-          .eq("id", this.currentActiveTrip.id);
-
-        if (tripErr) throw tripErr;
-        this.currentActiveTrip.actual_depart_time = new Date().toISOString();
+      if (trip) {
+        this.currentActiveTrip = trip;
+        // Save active trip to localStorage
+        localStorage.setItem('activeTripId', trip.id);
+        console.log("currentActiveTrip", this.currentActiveTrip);
+        
+        useScannerStore().sendTripData(
+          tripId,
+          trip.routes?.fare || 0
+        );
       }
     },
-    endTrip() {
-      this.SetArrivalTime(this.currentActiveTrip.id);
+
+    async endTrip() {
+      if (!this.currentActiveTrip) return;
+      
+      // First set the arrival time
+      await this.SetArrivalTime(this.currentActiveTrip.id);
+      
+      // Then clear the current trip and localStorage
       this.currentActiveTrip = null;
+      localStorage.removeItem('activeTripId');
+
+      // Fetch trips again to get the next available trip
+      await this.getTrips();
     },
-    async SetArrivalTime(tripId: string) {
+
+    async updatePassengerCount(value: number) {
+      if (!this.currentActiveTrip?.vehicles) return;
+      const count = this.currentActiveTrip.vehicles.capacity - value;
+      this.currentActiveTrip.seats_capacity = count;
+    },
+
+    async setAvailableSeats(count: number) {
+      if (!this.currentActiveTrip) return;
       const supabase = useSupabaseClient();
-      const { data: trip, error: tripErr } = await supabase
+      const { error } = await supabase
+        .from("trips")
+        .update({ seats_capacity: count })
+        .eq("id", this.currentActiveTrip.id);
+
+      if (error) throw error;
+      this.currentActiveTrip.seats_capacity = count;
+    },
+
+    async passangerLeft(value: number) {
+      if (!this.currentActiveTrip) return;
+      const count = this.currentActiveTrip.seats_capacity + 1;
+      this.currentActiveTrip.seats_capacity = count;
+    },
+
+    async setDepartureTime(tripId: string) {
+      if (!this.currentActiveTrip) return;
+      const supabase = useSupabaseClient();
+      const { error } = await supabase
+        .from("trips")
+        .update({ actual_depart_time: new Date().toISOString() })
+        .eq("id", this.currentActiveTrip.id);
+
+      if (error) throw error;
+      this.currentActiveTrip.actual_depart_time = new Date().toISOString();
+    },
+
+    async SetArrivalTime(tripId: string) {
+      if (!this.currentActiveTrip) return;
+      const supabase = useSupabaseClient();
+      const { error } = await supabase
         .from("trips")
         .update({ actual_arrival_time: new Date().toISOString() })
-        .eq("id", tripId);
+        .eq("id", this.currentActiveTrip.id);
 
-      if (tripErr) throw tripErr;
-
+      if (error) throw error;
       this.currentActiveTrip.actual_arrival_time = new Date().toISOString();
     },
   },
