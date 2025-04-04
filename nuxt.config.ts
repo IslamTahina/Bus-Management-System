@@ -10,6 +10,9 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
   ],
 
+  supabase: {
+    redirect: false,
+  },
   css: ['~/assets/css/main.css'],
   future: {
     compatibilityVersion: 4,

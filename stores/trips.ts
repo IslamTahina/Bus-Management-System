@@ -98,7 +98,7 @@ export const useTripsStore = defineStore("trips", {
 
     async passangerLeft(value: number) {
       if (!this.currentActiveTrip) return;
-      const count = this.currentActiveTrip.seats_capacity + 1;
+      const count = (this.currentActiveTrip?.seats_capacity || 0) + 1;
       this.currentActiveTrip.seats_capacity = count;
     },
 
